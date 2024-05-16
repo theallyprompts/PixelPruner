@@ -36,7 +36,13 @@ PixelPruner is a user-friendly image cropping app for AI-generated art. It suppo
 
   ---
 
-## Installation Guide
+## Installation Guide - Prebuilt App
+
+Head to the **[Releases](https://github.com/theallyprompts/PixelPruner/releases/tag/v1.0.0)** and download the latest .exe version - pre-packaged with Python and ready to run (no installation required!)
+
+---
+
+## Installation Guide - Manual Install
 
 Follow these steps to install and run PixelPruner on your local machine.
 

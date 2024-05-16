@@ -3,25 +3,36 @@ PixelPruner is a user-friendly image cropping app for AI-generated art. It suppo
 
 ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/2de5d40b-c417-4779-a429-cdabd575c307)
 
+![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/685915de-e7f3-4946-95e4-682420d68d2a)
+
+
 
 # Features
-- Multi-Format Support: Supports cropping images in PNG, JPG, JPEG, and WEBP formats. Crops are converted to PNG.
+- **Multi-Format Support**: Supports cropping images in PNG, JPG, JPEG, and WEBP formats. Crops are converted to PNG.
 
-- Interactive Crop Previews: Preview your crop selection in real-time with an interactive preview pane, before you make the crop.
+- **Interactive Crop Previews**: Preview your crop selection in real-time with an interactive preview pane, before you make the crop.
 
-- Thumbnail View of Crops: View all your cropped images as thumbnails in a dedicated pane, making it easy to manage and review your work.
+ ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/5768c2f2-7573-4700-a79d-b38508ac9307)
 
-- Rotation Tools: Easily rotate images to achieve the perfect orientation before cropping.
+- **Thumbnail View of Crops**: View all your cropped images as thumbnails in a dedicated pane, making it easy to manage and review your work.
 
-- Multi-Crops: Make multiple crops from the same image. Multiple faces? No problem!
+  ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/d64c84f0-7e96-4a10-b15e-431f8be3f6e7)
 
-- Customizable Output Folder: Choose a custom folder to save your cropped images.
+- **Rotation Tools**: Easily rotate images to achieve the perfect orientation before cropping.
 
-- Zip Crops: Quickly zip all cropped images into a single archive for easy sharing, storage, or upload to the Civitai.com on-site LoRA Trainer
+  ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/9049de14-ca20-4151-ac61-b473b5edd2c2)
 
-- Undo Last Crop: Made a mistake? Simply undo the last crop with the click of a button.
+- **Multi-Crops**: Make multiple crops from the same image. Multiple faces? No problem!
 
-- Keyboard Shortcuts: Navigate and manipulate images effortlessly with convenient WASD keyboard shortcuts.
+- **Customizable Output Folder**: Choose a custom folder to save your cropped images.
+
+- **Zip Crops**: Quickly zip all cropped images into a single archive for easy sharing, storage, or upload to the Civitai.com on-site LoRA Trainer
+
+  ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/71477f5b-7447-43cc-b996-bdb9a17dea2d)
+
+- **Undo Crop Actions**: Made a mistake? Simply undo the last crop with the click of a button.
+
+- **Keyboard Shortcuts**: Navigate and manipulate images effortlessly with convenient WASD keyboard shortcuts.
 
   ---
 

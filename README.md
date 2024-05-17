@@ -1,9 +1,7 @@
 # PixelPruner
 PixelPruner is a user-friendly image cropping app for AI-generated art. It supports PNG, JPG, JPEG, and WEBP formats. Easily crop, preview, and manage images with interactive previews, thumbnail views, rotation tools, and customizable output folders. Streamline your workflow and achieve perfect crops every time with PixelPruner.
 
-![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/2de5d40b-c417-4779-a429-cdabd575c307)
-
-https://github.com/theallyprompts/PixelPruner/assets/133992794/90491df0-a54f-4d73-8e00-d67422ecc427
+ ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/280cc553-bc1f-4be1-bd2b-715c6a149ccf)
 
 ---
 
@@ -12,7 +10,7 @@ https://github.com/theallyprompts/PixelPruner/assets/133992794/90491df0-a54f-4d7
 
 - **Interactive Crop Previews**: Preview your crop selection in real-time with an interactive preview pane, before you make the crop.
 
- ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/5768c2f2-7573-4700-a79d-b38508ac9307)
+  ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/5768c2f2-7573-4700-a79d-b38508ac9307)
 
 - **Thumbnail View of Crops**: View all your cropped images as thumbnails in a dedicated pane, making it easy to manage and review your work.
 
@@ -20,15 +18,17 @@ https://github.com/theallyprompts/PixelPruner/assets/133992794/90491df0-a54f-4d7
 
 - **Rotation Tools**: Easily rotate images to achieve the perfect orientation before cropping.
 
-  ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/9049de14-ca20-4151-ac61-b473b5edd2c2)
+  ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/6c09a5d9-cd66-472a-9a8e-951ff0968ed4)
 
 - **Multi-Crops**: Make multiple crops from the same image. Multiple faces? No problem!
+
+  ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/1cc9ebc3-7760-48ab-9638-3e73324f9028)
 
 - **Customizable Output Folder**: Choose a custom folder to save your cropped images.
 
 - **Zip Crops**: Quickly zip all cropped images into a single archive for easy sharing, storage, or upload to the Civitai.com on-site LoRA Trainer
 
-  ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/71477f5b-7447-43cc-b996-bdb9a17dea2d)
+  ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/9c7be80c-99b3-4e3a-9d27-26d5fc956ee8)
 
 - **Undo Crop Actions**: Made a mistake? Simply undo the last crop with the click of a button.
 
@@ -115,9 +115,17 @@ Follow these steps to install and run PixelPruner on your local machine.
 
 1. ~~**Add a toggle for advance-on-crop**: Why on earth did I add an auto-advance on crop? What a huge mistake! The next update will add a toggle to choose whether to advance-on-crop or remain on the current image.~~ Completed in v1.1.0
 
-2. Input and Output Folder selection improvements - I want to be able to switch input directory mid cropping-session!
+2. ~~Input and Output Folder selection improvements - I want to be able to switch input directory mid cropping-session!~~ Completed in v1.2.0
 
-3. **API Access to Civitai.com's LoRA Trainer**: Upload zipped crops directly into Civitai.com's on-site LoRA trainer. The API for this doesn't exist yet, but maybe if I ask nicely...
+3. **More Options for Input** - Ability to drag a selection of images into the app for cropping, rather than select from a folder. That sounds useful.
+
+4. **A Better Menu** - A proper file menu system.
+
+5. **User Settings** - The ability to save user preferences.
+
+6. **Simple image editing** - brightness, contrast, sharpness, etc. I want to be able to do as much as possible as easily as possible, without having to photoshop anything prior to upload to Civitai.
+
+7. **API Access to Civitai.com's LoRA Trainer**: Upload zipped crops directly into Civitai.com's on-site LoRA trainer. The API for this doesn't exist yet, but maybe if I ask nicely...
 
 ---
 

@@ -3,9 +3,9 @@ PixelPruner is a user-friendly image cropping app for AI-generated art. It suppo
 
 ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/2de5d40b-c417-4779-a429-cdabd575c307)
 
-![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/685915de-e7f3-4946-95e4-682420d68d2a)
+https://github.com/theallyprompts/PixelPruner/assets/133992794/90491df0-a54f-4d73-8e00-d67422ecc427
 
-
+---
 
 # Features
 - **Multi-Format Support**: Supports cropping images in PNG, JPG, JPEG, and WEBP formats. Crops are converted to PNG.

@@ -51,6 +51,8 @@ class PixelPruner:
         self.master = master
         self.master.title("PixelPruner")
 
+        self.showing_popup = False  # Flag to track if popup is already shown
+
         control_frame = tk.Frame(master)
         control_frame.pack(fill=tk.X, side=tk.TOP)
 
@@ -100,13 +102,17 @@ class PixelPruner:
             print(f"Error loading folder.png: {e}")
             self.open_folder_icon = tk.PhotoImage()  # Placeholder if load fails
 
+        self.input_folder_button = tk.Button(control_frame, text="Set Input Folder", command=self.select_input_folder)
+        self.input_folder_button.pack(side=tk.LEFT, padx=(10, 2))
+        ToolTip(self.input_folder_button, "Select a folder to load input images")
+
         self.output_folder_button = tk.Button(control_frame, text="Set Output Folder", command=self.select_output_folder)
         self.output_folder_button.pack(side=tk.LEFT, padx=(10, 2))
         ToolTip(self.output_folder_button, "Select a folder to save cropped images")
 
         self.open_folder_button = tk.Button(control_frame, image=self.open_folder_icon, command=self.open_output_folder)
         self.open_folder_button.pack(side=tk.LEFT, padx=(10, 2))
-        ToolTip(self.open_folder_button, "Open the custom output folder")
+        ToolTip(self.open_folder_button, "Open the output folder")
 
         self.zip_button = tk.Button(control_frame, text="Zip Crops (0)", command=self.zip_crops)
         self.zip_button.pack(side=tk.LEFT, padx=(10, 2))
@@ -124,7 +130,7 @@ class PixelPruner:
         self.undo_button.pack(side=tk.LEFT, padx=(10, 2))
         ToolTip(self.undo_button, "Undo the last crop (Ctrl+Z)")
 
-        self.auto_advance_var = tk.BooleanVar(value=True)  # Variable to hold the state of auto-advance
+        self.auto_advance_var = tk.BooleanVar(value=False)  # Variable to hold the state of auto-advance
         self.auto_advance_check = tk.Checkbutton(control_frame, text="Auto-advance", variable=self.auto_advance_var)
         self.auto_advance_check.pack(side=tk.LEFT, padx=(10, 2))
         ToolTip(self.auto_advance_check, "Toggle auto-advance to the next image after a crop")
@@ -156,26 +162,18 @@ class PixelPruner:
 
         self.status_bar = tk.Frame(master, bd=1, relief=tk.SUNKEN)
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-        self.status_label = tk.Label(self.status_bar, text="Welcome to PixelPruner", anchor=tk.W)
+        self.status_label = tk.Label(self.status_bar, text="Welcome to PixelPruner - Version 1.2.0", anchor=tk.W)
         self.status_label.pack(side=tk.LEFT, padx=10)
 
-        self.folder_path = filedialog.askdirectory(title="Select Folder with Images")
-        if not self.folder_path or not os.listdir(self.folder_path):
-            messagebox.showerror("Error", "No images found in the selected directory.")
-            self.master.destroy()
-            return
-        self.images = [os.path.join(self.folder_path, img) for img in os.listdir(self.folder_path) if img.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
-        if not self.images:
-            messagebox.showerror("Error", "No valid images found in the selected directory.")
-            self.master.destroy()
-            return
+        self.folder_path = None
+        self.images = []
         self.image_index = 0
         self.current_image = None
         self.image_scale = 1
         self.rect = None
         self.image_offset_x = 0
         self.image_offset_y = 0
-        self.output_folder = self.folder_path
+        self.output_folder = None
         self.original_size = (512, 512)
         self.current_size = (512, 512)
         self.crop_counter = 0  # Global counter for all crops
@@ -183,13 +181,10 @@ class PixelPruner:
         self.cropped_thumbnails = []  # List to keep track of cropped thumbnails
         self.preview_enabled = False  # Preview pane toggle
         self.crops_enabled = False  # Crop thumbnails pane toggle
-        self.update_image_counter()
 
         # Update the window and canvas sizes before displaying the first image
         self.master.update_idletasks()
         self.canvas.update_idletasks()
-
-        self.load_image()
 
         self.canvas.bind("<Motion>", self.on_mouse_move)
         self.canvas.bind("<ButtonPress-1>", self.on_button_press)
@@ -211,17 +206,6 @@ class PixelPruner:
         # Center the window on the screen
         self.center_window()
 
-        # Open the dropdown menu to ensure a size is selected
-        self.size_dropdown.event_generate('<Button-1>')
-
-        # Workaround to ensure the first image is centered
-        self.master.after(100, self.load_next_image)
-        self.master.after(200, self.load_previous_image)
-
-        # Enable mouse wheel scrolling for the crops canvas
-        self.crops_canvas.bind("<Enter>", self.bind_crops_mouse_wheel)
-        self.crops_canvas.bind("<Leave>", self.unbind_crops_mouse_wheel)
-
     def center_window(self):
         self.master.update_idletasks()
         window_width = self.master.winfo_width()
@@ -241,7 +225,16 @@ class PixelPruner:
     def update_zip_button(self):
         self.zip_button.config(text=f"Zip Crops ({len(self.cropped_images)})")
 
+    def show_info_message(self, title, message):
+        if not self.showing_popup:
+            self.showing_popup = True
+            messagebox.showinfo(title, message)
+            self.showing_popup = False
+
     def load_image(self):
+        if not self.folder_path:
+            self.show_info_message("Information", "Please set an Input Folder.")
+            return
         if 0 <= self.image_index < len(self.images):
             try:
                 image_path = self.images[self.image_index]
@@ -287,6 +280,9 @@ class PixelPruner:
         self.image_offset_y = (canvas_height - self.scaled_height) // 2
 
     def rotate_image(self, angle):
+        if not self.folder_path or not self.images:
+            self.show_info_message("Information", "Please set an Input Folder.")
+            return
         if self.current_image:
             self.current_image = self.current_image.rotate(angle, expand=True)
             self.display_image()
@@ -388,7 +384,7 @@ class PixelPruner:
         base_filename = os.path.basename(image_path)
         filename, ext = os.path.splitext(base_filename)
         cropped_filename = f"cropped_{self.crop_counter}_{filename}.png"
-        cropped_filepath = os.path.join(self.output_folder, cropped_filename)
+        cropped_filepath = os.path.join(self.output_folder or self.folder_path, cropped_filename)
         cropped.save(cropped_filepath, "PNG")
         self.cropped_images.insert(0, cropped_filepath)  # Insert at the beginning of the list
         self.update_zip_button()
@@ -415,18 +411,35 @@ class PixelPruner:
         self.crops_canvas.config(scrollregion=self.crops_canvas.bbox("all"))
 
     def perform_crop(self):
+        if not self.folder_path or not self.images:
+            self.show_info_message("Information", "Please set an Input Folder.")
+            return
         x1, y1, x2, y2 = self.canvas.coords(self.rect)
         self.crop_image(x1, y1, x2, y2)
         if self.auto_advance_var.get():
             self.load_next_image()
 
     def load_next_image(self):
+        if not self.folder_path or not self.images:
+            self.show_info_message("Information", "Please set an Input Folder.")
+            return
         self.image_index = (self.image_index + 1) % len(self.images)
         self.load_image()
 
     def load_previous_image(self):
+        if not self.folder_path or not self.images:
+            self.show_info_message("Information", "Please set an Input Folder.")
+            return
         self.image_index = (self.image_index - 1) % len(self.images)
         self.load_image()
+
+    def select_input_folder(self):
+        selected_folder = filedialog.askdirectory(title="Select Input Folder")
+        if selected_folder:
+            self.folder_path = selected_folder
+            self.load_images_from_folder()
+        else:
+            messagebox.showwarning("Warning", "No input folder selected.")
 
     def select_output_folder(self):
         selected_folder = filedialog.askdirectory(title="Select Custom Output Folder")
@@ -436,8 +449,12 @@ class PixelPruner:
             messagebox.showwarning("Warning", "No output folder selected. Using the current folder.")
 
     def open_output_folder(self):
-        if os.path.isdir(self.output_folder):
-            subprocess.Popen(f'explorer {os.path.realpath(self.output_folder)}')
+        folder_to_open = self.output_folder or self.folder_path
+        if not folder_to_open:
+            self.show_info_message("Information", "Please set an Output Folder.")
+            return
+        if os.path.isdir(folder_to_open):
+            subprocess.Popen(f'explorer {os.path.realpath(folder_to_open)}')
 
     def zip_crops(self):
         if not self.cropped_images:
@@ -446,7 +463,7 @@ class PixelPruner:
 
         num_images = len(self.cropped_images)
         current_date = datetime.now().strftime("%Y%m%d")
-        zip_filename = os.path.join(self.output_folder, f"{num_images}_{current_date}.zip")
+        zip_filename = os.path.join(self.output_folder or self.folder_path, f"{num_images}_{current_date}.zip")
 
         with zipfile.ZipFile(zip_filename, 'w') as zipf:
             for file in self.cropped_images:
@@ -456,6 +473,10 @@ class PixelPruner:
         self.update_status(f"{num_images} cropped images zipped into {zip_filename}")
 
     def toggle_pane(self, pane):
+        if not self.folder_path:
+            self.show_info_message("Information", "Please set an Input Folder.")
+            return
+
         if pane == "preview":
             self.preview_enabled = not self.preview_enabled
             self.crops_enabled = False
@@ -517,6 +538,21 @@ class PixelPruner:
         # Update scroll region to accommodate all thumbnails
         self.crops_canvas.config(scrollregion=self.crops_canvas.bbox("all"))
 
+    def load_images_from_folder(self):
+        if not self.folder_path:
+            messagebox.showwarning("Warning", "No input folder selected.")
+            return
+
+        self.images = [os.path.join(self.folder_path, img) for img in os.listdir(self.folder_path) if img.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
+        if not self.images:
+            messagebox.showerror("Error", "No valid images found in the selected directory.")
+            return
+
+        self.image_index = 0
+        self.load_image()
+        self.update_image_counter()
+        self.update_status(f"Loaded {len(self.images)} images from {self.folder_path}")
+
     def show_about(self):
         about_window = tk.Toplevel(self.master)
         about_window.title("About")
@@ -534,8 +570,8 @@ class PixelPruner:
         about_window.geometry(f'{window_width}x{window_height}+{x}+{y}')
 
         about_text = (
-            "Version 1.1.0 - 5/17/2024\n\n"
-            "Developed by TheAlly and GPT4o\n\n"
+            "Version 1.2.0 - 5/17/2024\n\n"
+            "Developed by TheAlly and ChatGPT 4o\n\n"
             "About: Prepare your LoRA training data with ease! "
             "Check out the GitHub Repo for the full feature list.\n\n"
         )

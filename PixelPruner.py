@@ -1,11 +1,22 @@
+import sys
+import os
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
-from PIL import Image, ImageTk
-import os
+from PIL import Image, ImageTk, __version__ as PILLOW_VERSION
 import subprocess
 import zipfile
 from datetime import datetime
 import webbrowser
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    
+    return os.path.join(base_path, relative_path)
 
 class ToolTip:
     def __init__(self, widget, text):
@@ -54,39 +65,45 @@ class PixelPruner:
 
         self.prev_button = tk.Button(control_frame, text="< Prev", command=self.load_previous_image)
         self.prev_button.pack(side=tk.LEFT, padx=(10, 2))
-        ToolTip(self.prev_button, "Load the previous image")
+        ToolTip(self.prev_button, "Load the previous image (S)")
 
         self.next_button = tk.Button(control_frame, text="Next >", command=self.load_next_image)
         self.next_button.pack(side=tk.LEFT, padx=(10, 2))
-        ToolTip(self.next_button, "Load the next image")
+        ToolTip(self.next_button, "Load the next image (W)")
 
+        # Load rotate left image
         try:
-            self.rotate_left_image = tk.PhotoImage(file="rotate_left.png")
+            self.rotate_left_image = tk.PhotoImage(file=resource_path("rotate_left.png"))
         except Exception as e:
             print(f"Error loading rotate_left.png: {e}")
             self.rotate_left_image = tk.PhotoImage()  # Placeholder if load fails
 
         # Load rotate right image
         try:
-            self.rotate_right_image = tk.PhotoImage(file="rotate_right.png")
+            self.rotate_right_image = tk.PhotoImage(file=resource_path("rotate_right.png"))
         except Exception as e:
             print(f"Error loading rotate_right.png: {e}")
             self.rotate_right_image = tk.PhotoImage()  # Placeholder if load fails
 
         self.rotate_left_button = tk.Button(control_frame, image=self.rotate_left_image, command=lambda: self.rotate_image(90))
         self.rotate_left_button.pack(side=tk.LEFT, padx=(10, 2))
-        ToolTip(self.rotate_left_button, "Rotate image counterclockwise")
+        ToolTip(self.rotate_left_button, "Rotate image counterclockwise (A)")
 
         self.rotate_right_button = tk.Button(control_frame, image=self.rotate_right_image, command=lambda: self.rotate_image(-90))
         self.rotate_right_button.pack(side=tk.LEFT, padx=(10, 2))
-        ToolTip(self.rotate_right_button, "Rotate image clockwise")
+        ToolTip(self.rotate_right_button, "Rotate image clockwise (D)")
 
+        # Load folder image
+        try:
+            self.open_folder_icon = tk.PhotoImage(file=resource_path("folder.png"))
+        except Exception as e:
+            print(f"Error loading folder.png: {e}")
+            self.open_folder_icon = tk.PhotoImage()  # Placeholder if load fails
 
         self.output_folder_button = tk.Button(control_frame, text="Set Output Folder", command=self.select_output_folder)
         self.output_folder_button.pack(side=tk.LEFT, padx=(10, 2))
         ToolTip(self.output_folder_button, "Select a folder to save cropped images")
 
-        self.open_folder_icon = tk.PhotoImage(file="folder.png")
         self.open_folder_button = tk.Button(control_frame, image=self.open_folder_icon, command=self.open_output_folder)
         self.open_folder_button.pack(side=tk.LEFT, padx=(10, 2))
         ToolTip(self.open_folder_button, "Open the custom output folder")
@@ -105,33 +122,42 @@ class PixelPruner:
 
         self.undo_button = tk.Button(control_frame, text="Undo Last Crop", command=self.undo_last_crop)
         self.undo_button.pack(side=tk.LEFT, padx=(10, 2))
-        ToolTip(self.undo_button, "Undo the last crop")
+        ToolTip(self.undo_button, "Undo the last crop (Ctrl+Z)")
+
+        self.auto_advance_var = tk.BooleanVar(value=True)  # Variable to hold the state of auto-advance
+        self.auto_advance_check = tk.Checkbutton(control_frame, text="Auto-advance", variable=self.auto_advance_var)
+        self.auto_advance_check.pack(side=tk.LEFT, padx=(10, 2))
+        ToolTip(self.auto_advance_check, "Toggle auto-advance to the next image after a crop")
 
         self.about_button = tk.Button(control_frame, text="About", command=self.show_about)
         self.about_button.pack(side=tk.LEFT, padx=(10, 2))
         ToolTip(self.about_button, "About this application")
 
-        self.exit_button = tk.Button(control_frame, text="Exit App", command=self.master.quit)
-        self.exit_button.pack(side=tk.LEFT, padx=(10, 2))
-        ToolTip(self.exit_button, "Exit the application")
-
         self.image_counter_label = tk.Label(control_frame, text="0/0")
         self.image_counter_label.pack(side=tk.RIGHT, padx=(10, 20))
 
-        self.canvas = tk.Canvas(master, cursor="cross", bg="gray")
+        self.main_frame = tk.Frame(master)
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
+
+        self.canvas = tk.Canvas(self.main_frame, cursor="cross", bg="gray")
         self.canvas.pack(side=tk.LEFT, fill="both", expand=True)
 
-        self.preview_canvas = tk.Canvas(master, width=512, height=512, bg="gray")
+        self.preview_canvas = tk.Canvas(self.main_frame, width=512, height=512, bg="gray")
         self.preview_canvas.pack_forget()  # Hide preview pane initially
 
         # Create a frame for the crops pane with a scrollable canvas
-        self.crops_frame = tk.Frame(master)
+        self.crops_frame = tk.Frame(self.main_frame)
         self.crops_canvas = tk.Canvas(self.crops_frame, bg="gray", width=266)  # Set width to fit 2 thumbnails and spacing
         self.crops_scrollbar = tk.Scrollbar(self.crops_frame, orient="vertical", command=self.crops_canvas.yview)
         self.crops_canvas.configure(yscrollcommand=self.crops_scrollbar.set)
         self.crops_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.crops_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.crops_frame.pack_forget()  # Hide crops pane initially
+
+        self.status_bar = tk.Frame(master, bd=1, relief=tk.SUNKEN)
+        self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+        self.status_label = tk.Label(self.status_bar, text="Welcome to PixelPruner", anchor=tk.W)
+        self.status_label.pack(side=tk.LEFT, padx=10)
 
         self.folder_path = filedialog.askdirectory(title="Select Folder with Images")
         if not self.folder_path or not os.listdir(self.folder_path):
@@ -177,6 +203,7 @@ class PixelPruner:
         self.master.bind("s", lambda event: self.load_previous_image())
         self.master.bind("a", lambda event: self.rotate_image(90))
         self.master.bind("d", lambda event: self.rotate_image(-90))
+        self.master.bind("<Control-z>", lambda event: self.undo_last_crop())
         
         # Set the focus to the master window
         master.focus_set()
@@ -205,6 +232,9 @@ class PixelPruner:
         y = (screen_height // 2) - (window_height // 2)
         self.master.geometry(f'{window_width}x{window_height}+{x}+{y}')
 
+    def update_status(self, message):
+        self.status_label.config(text=message)
+
     def update_image_counter(self):
         self.image_counter_label.config(text=f"{self.image_index + 1}/{len(self.images)}")
 
@@ -227,8 +257,15 @@ class PixelPruner:
         self.scaled_width = min(800, self.current_image.width)
         self.scaled_height = int(self.scaled_width / aspect_ratio) if aspect_ratio > 1 else min(600, self.current_image.height)
         self.scaled_width = int(self.scaled_height * aspect_ratio) if self.scaled_height < self.scaled_width else self.scaled_width
-        self.tkimage = ImageTk.PhotoImage(self.current_image.resize((self.scaled_width, self.scaled_height), Image.ANTIALIAS))
         
+        # Determine the appropriate resampling filter based on Pillow version
+        if PILLOW_VERSION >= "7.0.0":
+            resampling_filter = Image.LANCZOS
+        else:
+            resampling_filter = Image.ANTIALIAS
+
+        self.tkimage = ImageTk.PhotoImage(self.current_image.resize((self.scaled_width, self.scaled_height), resampling_filter))
+
         # Center the image within the canvas
         self.center_image_on_canvas()
 
@@ -253,6 +290,7 @@ class PixelPruner:
         if self.current_image:
             self.current_image = self.current_image.rotate(angle, expand=True)
             self.display_image()
+            self.update_status(f"Image rotated by {angle} degrees")
 
     def update_crop_box_size(self, event=None):
         if self.rect:
@@ -357,6 +395,7 @@ class PixelPruner:
 
         # Create thumbnail and update crops canvas
         self.update_crops_canvas(cropped, cropped_filepath)
+        self.update_status(f"Cropped image saved as {cropped_filepath}")
 
     def update_crops_canvas(self, cropped, filepath):
         cropped.thumbnail((128, 128))  # Create smaller thumbnail
@@ -378,7 +417,8 @@ class PixelPruner:
     def perform_crop(self):
         x1, y1, x2, y2 = self.canvas.coords(self.rect)
         self.crop_image(x1, y1, x2, y2)
-        self.load_next_image()
+        if self.auto_advance_var.get():
+            self.load_next_image()
 
     def load_next_image(self):
         self.image_index = (self.image_index + 1) % len(self.images)
@@ -413,14 +453,19 @@ class PixelPruner:
                 zipf.write(file, os.path.basename(file))
 
         messagebox.showinfo("Info", f"Cropped images have been zipped into {zip_filename}")
+        self.update_status(f"{num_images} cropped images zipped into {zip_filename}")
 
     def toggle_pane(self, pane):
         if pane == "preview":
             self.preview_enabled = not self.preview_enabled
             self.crops_enabled = False
+            self.update_button_color(self.preview_toggle_button, self.preview_enabled)
+            self.update_button_color(self.crops_toggle_button, False)
         elif pane == "crops":
             self.crops_enabled = not self.crops_enabled
             self.preview_enabled = False
+            self.update_button_color(self.crops_toggle_button, self.crops_enabled)
+            self.update_button_color(self.preview_toggle_button, False)
 
         if self.preview_enabled:
             self.master.geometry(f"1550x800")  # Adjusted size to fit the larger preview pane
@@ -439,6 +484,12 @@ class PixelPruner:
         self.master.after(100, self.load_next_image)
         self.master.after(200, self.load_previous_image)
 
+    def update_button_color(self, button, active):
+        if active:
+            button.config(bg="darkgray")
+        else:
+            button.config(bg="SystemButtonFace")
+
     def undo_last_crop(self):
         if not self.cropped_images:
             messagebox.showinfo("Info", "No cropped images to undo.")
@@ -451,7 +502,7 @@ class PixelPruner:
         self.cropped_thumbnails.pop(0)
         self.update_crops_canvas_layout()
         self.update_zip_button()
-        messagebox.showinfo("Info", "Last crop has been undone.")
+        self.update_status("Last crop undone")
 
     def update_crops_canvas_layout(self):
         self.crops_canvas.delete("all")  # Clear previous thumbnails
@@ -483,7 +534,8 @@ class PixelPruner:
         about_window.geometry(f'{window_width}x{window_height}+{x}+{y}')
 
         about_text = (
-            "Made by: TheAlly\n\n"
+            "Version 1.1.0 - 5/17/2024\n\n"
+            "Developed by TheAlly and GPT4o\n\n"
             "About: Prepare your LoRA training data with ease! "
             "Check out the GitHub Repo for the full feature list.\n\n"
         )
@@ -494,7 +546,7 @@ class PixelPruner:
         link_frame = tk.Frame(about_window)
         link_frame.pack(fill="both", expand=True)
 
-        profile_label = tk.Label(link_frame, text="GitHub Repository:", justify=tk.LEFT, padx=10)
+        profile_label = tk.Label(link_frame, text="GitHub:", justify=tk.LEFT, padx=10)
         profile_label.pack(side=tk.LEFT)
         link = tk.Label(link_frame, text="https://github.com/theallyprompts/PixelPruner", fg="blue", cursor="hand2", padx=10)
         link.pack(side=tk.LEFT)

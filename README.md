@@ -113,9 +113,11 @@ Follow these steps to install and run PixelPruner on your local machine.
 
 ### Roadmap
 
-1. **Add a toggle for advance-on-crop**: Why on earth did I add an auto-advance on crop? What a huge mistake! The next update will add a toggle to choose whether to advance-on-crop or remain on the current image.
+1. ~~**Add a toggle for advance-on-crop**: Why on earth did I add an auto-advance on crop? What a huge mistake! The next update will add a toggle to choose whether to advance-on-crop or remain on the current image.~~ Completed in v1.1.0
 
-2. **API Access to Civitai.com's LoRA Trainer**: Upload zipped crops directly into Civitai.com's on-site LoRA trainer. The API for this doesn't exist yet, but maybe if I ask nicely...
+2. Input and Output Folder selection improvements - I want to be able to switch input directory mid cropping-session!
+
+3. **API Access to Civitai.com's LoRA Trainer**: Upload zipped crops directly into Civitai.com's on-site LoRA trainer. The API for this doesn't exist yet, but maybe if I ask nicely...
 
 ---
 

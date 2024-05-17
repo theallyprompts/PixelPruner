@@ -38,7 +38,7 @@ https://github.com/theallyprompts/PixelPruner/assets/133992794/90491df0-a54f-4d7
 
 ## Installation Guide - Prebuilt App
 
-Head to the **[Releases](https://github.com/theallyprompts/PixelPruner/releases/tag/v1.0.0)** and download the latest .exe version - pre-packaged with Python and ready to run (no installation required!)
+Head to the **[Releases](https://github.com/theallyprompts/PixelPruner/releases)** and download the latest .exe version - pre-packaged with Python and ready to run (no installation required!)
 
 ---
 

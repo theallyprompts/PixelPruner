@@ -2,11 +2,13 @@ import sys
 import os
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
+from tkinterdnd2 import TkinterDnD, DND_FILES
 from PIL import Image, ImageTk, __version__ as PILLOW_VERSION
 import subprocess
 import zipfile
 from datetime import datetime
 import webbrowser
+import winsound
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -53,6 +55,45 @@ class PixelPruner:
 
         self.showing_popup = False  # Flag to track if popup is already shown
 
+        # Create the menu bar
+        self.menu_bar = tk.Menu(master)
+        master.config(menu=self.menu_bar)
+
+        # Create the File menu
+        self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="File", menu=self.file_menu)
+        self.file_menu.add_command(label="Set Input Folder", command=self.select_input_folder)
+        self.file_menu.add_command(label="Set Output Folder", command=self.select_output_folder)
+        self.file_menu.add_command(label="Open Current Input Folder", command=self.open_input_folder)
+        self.file_menu.add_command(label="Open Current Output Folder", command=self.open_output_folder)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Exit", command=master.quit)
+
+        # Create the Edit menu
+        self.edit_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="Edit", menu=self.edit_menu)
+        self.edit_menu.add_command(label="Undo Last Crop", command=self.undo_last_crop)
+        self.edit_menu.add_command(label="Zip Crops", command=self.zip_crops)
+
+        # Create the View menu
+        self.view_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="View", menu=self.view_menu)
+        self.view_menu.add_command(label="Preview Pane", command=lambda: self.toggle_pane("preview"))
+        self.view_menu.add_command(label="Crops Pane", command=lambda: self.toggle_pane("crops"))
+
+        # Create the Settings menu
+        self.settings_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="Settings", menu=self.settings_menu)
+        self.auto_advance_var = tk.BooleanVar(value=False)
+        self.crop_sound_var = tk.BooleanVar(value=False)
+        self.settings_menu.add_checkbutton(label="Auto-advance", variable=self.auto_advance_var)
+        self.settings_menu.add_checkbutton(label="Crop Sound", variable=self.crop_sound_var)
+
+        # Create the Help menu
+        self.help_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
+        self.help_menu.add_command(label="About", command=self.show_about)
+
         control_frame = tk.Frame(master)
         control_frame.pack(fill=tk.X, side=tk.TOP)
 
@@ -95,51 +136,18 @@ class PixelPruner:
         self.rotate_right_button.pack(side=tk.LEFT, padx=(10, 2))
         ToolTip(self.rotate_right_button, "Rotate image clockwise (D)")
 
-        # Load folder image
+        # Load delete image for the control frame
         try:
-            self.open_folder_icon = tk.PhotoImage(file=resource_path("folder.png"))
+            self.delete_image = tk.PhotoImage(file=resource_path("delete_image.png"))
         except Exception as e:
-            print(f"Error loading folder.png: {e}")
-            self.open_folder_icon = tk.PhotoImage()  # Placeholder if load fails
+            print(f"Error loading delete_image.png: {e}")
+            self.delete_image = tk.PhotoImage()  # Placeholder if load fails
 
-        self.input_folder_button = tk.Button(control_frame, text="Set Input Folder", command=self.select_input_folder)
-        self.input_folder_button.pack(side=tk.LEFT, padx=(10, 2))
-        ToolTip(self.input_folder_button, "Select a folder to load input images")
+        self.delete_button = tk.Button(control_frame, image=self.delete_image, command=self.delete_current_image)
+        self.delete_button.pack(side=tk.LEFT, padx=(10, 2))
+        ToolTip(self.delete_button, "Delete the current image (Delete)")
 
-        self.output_folder_button = tk.Button(control_frame, text="Set Output Folder", command=self.select_output_folder)
-        self.output_folder_button.pack(side=tk.LEFT, padx=(10, 2))
-        ToolTip(self.output_folder_button, "Select a folder to save cropped images")
-
-        self.open_folder_button = tk.Button(control_frame, image=self.open_folder_icon, command=self.open_output_folder)
-        self.open_folder_button.pack(side=tk.LEFT, padx=(10, 2))
-        ToolTip(self.open_folder_button, "Open the output folder")
-
-        self.zip_button = tk.Button(control_frame, text="Zip Crops (0)", command=self.zip_crops)
-        self.zip_button.pack(side=tk.LEFT, padx=(10, 2))
-        ToolTip(self.zip_button, "Zip all cropped images")
-
-        self.preview_toggle_button = tk.Button(control_frame, text="Preview", command=lambda: self.toggle_pane("preview"))
-        self.preview_toggle_button.pack(side=tk.LEFT, padx=(10, 2))
-        ToolTip(self.preview_toggle_button, "Toggle the preview pane")
-
-        self.crops_toggle_button = tk.Button(control_frame, text="Show Crops", command=lambda: self.toggle_pane("crops"))
-        self.crops_toggle_button.pack(side=tk.LEFT, padx=(10, 2))
-        ToolTip(self.crops_toggle_button, "Toggle the crop thumbnails pane")
-
-        self.undo_button = tk.Button(control_frame, text="Undo Last Crop", command=self.undo_last_crop)
-        self.undo_button.pack(side=tk.LEFT, padx=(10, 2))
-        ToolTip(self.undo_button, "Undo the last crop (Ctrl+Z)")
-
-        self.auto_advance_var = tk.BooleanVar(value=False)  # Variable to hold the state of auto-advance
-        self.auto_advance_check = tk.Checkbutton(control_frame, text="Auto-advance", variable=self.auto_advance_var)
-        self.auto_advance_check.pack(side=tk.LEFT, padx=(10, 2))
-        ToolTip(self.auto_advance_check, "Toggle auto-advance to the next image after a crop")
-
-        self.about_button = tk.Button(control_frame, text="About", command=self.show_about)
-        self.about_button.pack(side=tk.LEFT, padx=(10, 2))
-        ToolTip(self.about_button, "About this application")
-
-        self.image_counter_label = tk.Label(control_frame, text="0/0")
+        self.image_counter_label = tk.Label(control_frame, text="Viewing 0 of 0")
         self.image_counter_label.pack(side=tk.RIGHT, padx=(10, 20))
 
         self.main_frame = tk.Frame(master)
@@ -153,17 +161,22 @@ class PixelPruner:
 
         # Create a frame for the crops pane with a scrollable canvas
         self.crops_frame = tk.Frame(self.main_frame)
-        self.crops_canvas = tk.Canvas(self.crops_frame, bg="gray", width=266)  # Set width to fit 2 thumbnails and spacing
+        self.crops_canvas = tk.Canvas(self.crops_frame, bg="gray", width=512)  # Set width to match preview pane
         self.crops_scrollbar = tk.Scrollbar(self.crops_frame, orient="vertical", command=self.crops_canvas.yview)
         self.crops_canvas.configure(yscrollcommand=self.crops_scrollbar.set)
         self.crops_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.crops_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.crops_frame.pack_forget()  # Hide crops pane initially
 
+        self.crops_canvas.bind("<Enter>", self.bind_crops_mouse_wheel)
+        self.crops_canvas.bind("<Leave>", self.unbind_crops_mouse_wheel)
+
         self.status_bar = tk.Frame(master, bd=1, relief=tk.SUNKEN)
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-        self.status_label = tk.Label(self.status_bar, text="Welcome to PixelPruner - Version 1.2.0", anchor=tk.W)
+        self.status_label = tk.Label(self.status_bar, text="Welcome to PixelPruner - Version 2.0.0", anchor=tk.W)
         self.status_label.pack(side=tk.LEFT, padx=10)
+        self.cropped_images_label = tk.Label(self.status_bar, text="Images Cropped: 0", anchor=tk.E)
+        self.cropped_images_label.pack(side=tk.RIGHT, padx=10)
 
         self.folder_path = None
         self.images = []
@@ -182,6 +195,17 @@ class PixelPruner:
         self.preview_enabled = False  # Preview pane toggle
         self.crops_enabled = False  # Crop thumbnails pane toggle
 
+        # Load delete image for the crops pane
+        try:
+            self.delete_crop_image = tk.PhotoImage(file=resource_path("delete_crop.png"))
+        except Exception as e:
+            print(f"Error loading delete_crop.png: {e}")
+            self.delete_crop_image = tk.PhotoImage()  # Placeholder if load fails
+
+        # Enable drag-and-drop for the main frame
+        self.main_frame.drop_target_register(DND_FILES)
+        self.main_frame.dnd_bind('<<Drop>>', self.on_drop)
+
         # Update the window and canvas sizes before displaying the first image
         self.master.update_idletasks()
         self.canvas.update_idletasks()
@@ -199,6 +223,7 @@ class PixelPruner:
         self.master.bind("a", lambda event: self.rotate_image(90))
         self.master.bind("d", lambda event: self.rotate_image(-90))
         self.master.bind("<Control-z>", lambda event: self.undo_last_crop())
+        self.master.bind("<Delete>", lambda event: self.delete_current_image())
         
         # Set the focus to the master window
         master.focus_set()
@@ -220,10 +245,10 @@ class PixelPruner:
         self.status_label.config(text=message)
 
     def update_image_counter(self):
-        self.image_counter_label.config(text=f"{self.image_index + 1}/{len(self.images)}")
+        self.image_counter_label.config(text=f"Viewing {self.image_index + 1} of {len(self.images)}")
 
-    def update_zip_button(self):
-        self.zip_button.config(text=f"Zip Crops ({len(self.cropped_images)})")
+    def update_cropped_images_counter(self):
+        self.cropped_images_label.config(text=f"Images Cropped: {len(self.cropped_images)}")
 
     def show_info_message(self, title, message):
         if not self.showing_popup:
@@ -232,8 +257,8 @@ class PixelPruner:
             self.showing_popup = False
 
     def load_image(self):
-        if not self.folder_path:
-            self.show_info_message("Information", "Please set an Input Folder.")
+        if not self.folder_path and not self.images:
+            self.show_info_message("Information", "Please select an input folder.")
             return
         if 0 <= self.image_index < len(self.images):
             try:
@@ -280,8 +305,8 @@ class PixelPruner:
         self.image_offset_y = (canvas_height - self.scaled_height) // 2
 
     def rotate_image(self, angle):
-        if not self.folder_path or not self.images:
-            self.show_info_message("Information", "Please set an Input Folder.")
+        if not self.folder_path and not self.images:
+            self.show_info_message("Information", "Please set an Input Folder from the File Menu!")
             return
         if self.current_image:
             self.current_image = self.current_image.rotate(angle, expand=True)
@@ -378,23 +403,39 @@ class PixelPruner:
         cropped = self.current_image.crop((real_x1, real_y1, real_x2, real_y2))
         cropped = cropped.resize(self.original_size)
 
+        # Prompt for output folder if not set and images are dragged in
+        if not self.output_folder and not self.folder_path:
+            self.select_output_folder()
+            if not self.output_folder:
+                self.show_info_message("Information", "Please set an Output Folder from the File Menu!")
+                return
+
+        # Use input folder as output folder if set and output folder is not set
+        if not self.output_folder:
+            self.output_folder = self.folder_path
+
         # Generate a unique filename by appending a global counter
         self.crop_counter += 1
         image_path = self.images[self.image_index]
         base_filename = os.path.basename(image_path)
         filename, ext = os.path.splitext(base_filename)
         cropped_filename = f"cropped_{self.crop_counter}_{filename}.png"
-        cropped_filepath = os.path.join(self.output_folder or self.folder_path, cropped_filename)
+        cropped_filepath = os.path.join(self.output_folder, cropped_filename).replace("/", "\\")
         cropped.save(cropped_filepath, "PNG")
         self.cropped_images.insert(0, cropped_filepath)  # Insert at the beginning of the list
-        self.update_zip_button()
+        self.update_cropped_images_counter()
+
+        # Play crop sound if enabled
+        if self.crop_sound_var.get():
+            winsound.PlaySound(resource_path("click.wav"), winsound.SND_FILENAME | winsound.SND_ASYNC)
 
         # Create thumbnail and update crops canvas
         self.update_crops_canvas(cropped, cropped_filepath)
-        self.update_status(f"Cropped image saved as {cropped_filepath}")
+        cropped_filepath_forward_slash = cropped_filepath.replace("\\", "/")
+        self.update_status(f"Cropped image saved as {cropped_filepath_forward_slash}")
 
     def update_crops_canvas(self, cropped, filepath):
-        cropped.thumbnail((128, 128))  # Create smaller thumbnail
+        cropped.thumbnail((256, 256))  # Create larger thumbnail
         tkthumbnail = ImageTk.PhotoImage(cropped)
         self.cropped_thumbnails.insert(0, (tkthumbnail, filepath))  # Insert at the beginning of the list
 
@@ -404,15 +445,51 @@ class PixelPruner:
 
         for index, (thumbnail, path) in enumerate(self.cropped_thumbnails):
             row, col = divmod(index, cols)
-            x, y = col * (128 + spacing), row * (128 + spacing)
+            x, y = col * (256 + spacing), row * (256 + spacing)
             self.crops_canvas.create_image(x, y, anchor="nw", image=thumbnail)
+            
+            # Add delete icon at the bottom left corner of each thumbnail
+            delete_icon_x = x + 5
+            delete_icon_y = y + 256 - 25
+            delete_icon = self.crops_canvas.create_image(delete_icon_x, delete_icon_y, anchor="nw", image=self.delete_crop_image)
+            self.crops_canvas.tag_bind(delete_icon, "<Button-1>", lambda event, path=path: self.delete_crop(path))
+
+        # Update scroll region to accommodate all thumbnails
+        self.crops_canvas.config(scrollregion=self.crops_canvas.bbox("all"))
+
+    def delete_crop(self, filepath):
+        if messagebox.askyesno("Delete Crop", "Are you sure you want to delete this crop?"):
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            self.cropped_images = [img for img in self.cropped_images if img != filepath]
+            self.cropped_thumbnails = [(thumb, path) for thumb, path in self.cropped_thumbnails if path != filepath]
+            filepath_forward_slash = filepath.replace("\\", "/")
+            self.update_crops_canvas_layout()
+            self.update_cropped_images_counter()
+            self.update_status(f"Deleted crop {filepath_forward_slash}")
+
+    def update_crops_canvas_layout(self):
+        self.crops_canvas.delete("all")  # Clear previous thumbnails
+        cols = 2  # Number of columns in the grid
+        spacing = 10  # Space between thumbnails
+
+        for index, (thumbnail, path) in enumerate(self.cropped_thumbnails):
+            row, col = divmod(index, cols)
+            x, y = col * (256 + spacing), row * (256 + spacing)
+            self.crops_canvas.create_image(x, y, anchor="nw", image=thumbnail)
+            
+            # Add delete icon at the bottom left corner of each thumbnail
+            delete_icon_x = x + 5
+            delete_icon_y = y + 256 - 25
+            delete_icon = self.crops_canvas.create_image(delete_icon_x, delete_icon_y, anchor="nw", image=self.delete_crop_image)
+            self.crops_canvas.tag_bind(delete_icon, "<Button-1>", lambda event, path=path: self.delete_crop(path))
 
         # Update scroll region to accommodate all thumbnails
         self.crops_canvas.config(scrollregion=self.crops_canvas.bbox("all"))
 
     def perform_crop(self):
-        if not self.folder_path or not self.images:
-            self.show_info_message("Information", "Please set an Input Folder.")
+        if not self.folder_path and not self.images:
+            self.show_info_message("Information", "Please set an Input Folder from the File Menu!")
             return
         x1, y1, x2, y2 = self.canvas.coords(self.rect)
         self.crop_image(x1, y1, x2, y2)
@@ -420,15 +497,15 @@ class PixelPruner:
             self.load_next_image()
 
     def load_next_image(self):
-        if not self.folder_path or not self.images:
-            self.show_info_message("Information", "Please set an Input Folder.")
+        if not self.folder_path and not self.images:
+            self.show_info_message("Information", "Please set an Input Folder from the File Menu!")
             return
         self.image_index = (self.image_index + 1) % len(self.images)
         self.load_image()
 
     def load_previous_image(self):
-        if not self.folder_path or not self.images:
-            self.show_info_message("Information", "Please set an Input Folder.")
+        if not self.folder_path and not self.images:
+            self.show_info_message("Information", "Please set an Input Folder from the File Menu!")
             return
         self.image_index = (self.image_index - 1) % len(self.images)
         self.load_image()
@@ -439,31 +516,38 @@ class PixelPruner:
             self.folder_path = selected_folder
             self.load_images_from_folder()
         else:
-            messagebox.showwarning("Warning", "No input folder selected.")
+            messagebox.showwarning("Warning", "No input folder selected!")
 
     def select_output_folder(self):
         selected_folder = filedialog.askdirectory(title="Select Custom Output Folder")
         if selected_folder:
             self.output_folder = selected_folder
         else:
-            messagebox.showwarning("Warning", "No output folder selected. Using the current folder.")
+            messagebox.showwarning("Warning", "No output folder selected! Crops can't be saved until one is set!")
+
+    def open_input_folder(self):
+        if not self.folder_path:
+            self.show_info_message("Information", "Please set an Input Folder from the File Menu!")
+            return
+        if os.path.isdir(self.folder_path):
+            subprocess.Popen(['explorer', self.folder_path.replace("/", "\\")])
 
     def open_output_folder(self):
         folder_to_open = self.output_folder or self.folder_path
         if not folder_to_open:
-            self.show_info_message("Information", "Please set an Output Folder.")
+            self.show_info_message("Information", "Please set an Output Folder from the File Menu!")
             return
         if os.path.isdir(folder_to_open):
-            subprocess.Popen(f'explorer {os.path.realpath(folder_to_open)}')
+            subprocess.Popen(['explorer', folder_to_open.replace("/", "\\")])
 
     def zip_crops(self):
         if not self.cropped_images:
-            messagebox.showinfo("Info", "No cropped images to zip.")
+            messagebox.showinfo("Info", "No cropped images to zip!")
             return
 
         num_images = len(self.cropped_images)
         current_date = datetime.now().strftime("%Y%m%d")
-        zip_filename = os.path.join(self.output_folder or self.folder_path, f"{num_images}_{current_date}.zip")
+        zip_filename = os.path.join(self.output_folder or self.folder_path, f"{num_images}_{current_date}.zip").replace("\\", "/")
 
         with zipfile.ZipFile(zip_filename, 'w') as zipf:
             for file in self.cropped_images:
@@ -473,27 +557,23 @@ class PixelPruner:
         self.update_status(f"{num_images} cropped images zipped into {zip_filename}")
 
     def toggle_pane(self, pane):
-        if not self.folder_path:
-            self.show_info_message("Information", "Please set an Input Folder.")
+        if not self.folder_path and not self.images:
+            self.show_info_message("Information", "Please set an Input Folder from the File Menu!")
             return
 
         if pane == "preview":
             self.preview_enabled = not self.preview_enabled
             self.crops_enabled = False
-            self.update_button_color(self.preview_toggle_button, self.preview_enabled)
-            self.update_button_color(self.crops_toggle_button, False)
         elif pane == "crops":
             self.crops_enabled = not self.crops_enabled
             self.preview_enabled = False
-            self.update_button_color(self.crops_toggle_button, self.crops_enabled)
-            self.update_button_color(self.preview_toggle_button, False)
 
         if self.preview_enabled:
             self.master.geometry(f"1550x800")  # Adjusted size to fit the larger preview pane
             self.preview_canvas.pack(side=tk.RIGHT, padx=5, pady=5, fill=tk.BOTH, expand=False)
             self.crops_frame.pack_forget()
         elif self.crops_enabled:
-            self.master.geometry(f"1350x770")  # Adjusted size to fit the crops pane
+            self.master.geometry(f"1550x800")  # Adjusted size to fit the crops pane
             self.crops_frame.pack(side=tk.RIGHT, padx=5, pady=5, fill=tk.BOTH, expand=False)
             self.preview_canvas.pack_forget()
         else:
@@ -505,15 +585,9 @@ class PixelPruner:
         self.master.after(100, self.load_next_image)
         self.master.after(200, self.load_previous_image)
 
-    def update_button_color(self, button, active):
-        if active:
-            button.config(bg="darkgray")
-        else:
-            button.config(bg="SystemButtonFace")
-
     def undo_last_crop(self):
         if not self.cropped_images:
-            messagebox.showinfo("Info", "No cropped images to undo.")
+            messagebox.showinfo("Info", "No cropped images to undo!")
             return
 
         last_cropped_image = self.cropped_images.pop(0)  # Remove the first item in the list
@@ -522,25 +596,12 @@ class PixelPruner:
 
         self.cropped_thumbnails.pop(0)
         self.update_crops_canvas_layout()
-        self.update_zip_button()
+        self.update_cropped_images_counter()
         self.update_status("Last crop undone")
-
-    def update_crops_canvas_layout(self):
-        self.crops_canvas.delete("all")  # Clear previous thumbnails
-        cols = 2  # Number of columns in the grid
-        spacing = 10  # Space between thumbnails
-
-        for index, (thumbnail, path) in enumerate(self.cropped_thumbnails):
-            row, col = divmod(index, cols)
-            x, y = col * (128 + spacing), row * (128 + spacing)
-            self.crops_canvas.create_image(x, y, anchor="nw", image=thumbnail)
-
-        # Update scroll region to accommodate all thumbnails
-        self.crops_canvas.config(scrollregion=self.crops_canvas.bbox("all"))
 
     def load_images_from_folder(self):
         if not self.folder_path:
-            messagebox.showwarning("Warning", "No input folder selected.")
+            messagebox.showwarning("Warning", "No input folder set!")
             return
 
         self.images = [os.path.join(self.folder_path, img) for img in os.listdir(self.folder_path) if img.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
@@ -552,6 +613,39 @@ class PixelPruner:
         self.load_image()
         self.update_image_counter()
         self.update_status(f"Loaded {len(self.images)} images from {self.folder_path}")
+
+    def load_images_from_list(self, file_list):
+        self.images = [file for file in file_list if file.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
+        if not self.images:
+            messagebox.showerror("Error", "No valid images found in the dropped files.")
+            return
+
+        self.image_index = 0
+        self.load_image()
+        self.update_image_counter()
+        self.update_status(f"Loaded {len(self.images)} images from dropped files")
+
+    def on_drop(self, event):
+        file_list = self.master.tk.splitlist(event.data)
+        self.load_images_from_list(file_list)
+
+    def toggle_auto_advance(self):
+        self.auto_advance_var.set(not self.auto_advance_var.get())
+
+    def delete_current_image(self):
+        if not self.folder_path and not self.images:
+            self.show_info_message("Information", "Please set an Input Folder from the File Menu!")
+            return
+        if messagebox.askyesno("Delete Image", "Are you sure you want to delete this image?"):
+            image_path = self.images.pop(self.image_index)
+            if os.path.exists(image_path):
+                os.remove(image_path)
+            if self.image_index >= len(self.images):
+                self.image_index = 0
+            self.load_image()
+            self.update_image_counter()
+            image_path_forward_slash = image_path.replace("\\", "/")
+            self.update_status(f"Deleted image {image_path_forward_slash}")
 
     def show_about(self):
         about_window = tk.Toplevel(self.master)
@@ -570,8 +664,8 @@ class PixelPruner:
         about_window.geometry(f'{window_width}x{window_height}+{x}+{y}')
 
         about_text = (
-            "Version 1.2.0 - 5/17/2024\n\n"
-            "Developed by TheAlly and ChatGPT 4o\n\n"
+            "Version 2.0.0 - 5/19/2024\n\n"
+            "Developed by TheAlly and GPT4o\n\n"
             "About: Prepare your LoRA training data with ease! "
             "Check out the GitHub Repo for the full feature list.\n\n"
         )
@@ -588,11 +682,8 @@ class PixelPruner:
         link.pack(side=tk.LEFT)
         link.bind("<Button-1>", lambda e: webbrowser.open_new("https://github.com/theallyprompts/PixelPruner"))
 
-        close_button = tk.Button(about_window, text="Close", command=about_window.destroy)
-        close_button.pack(pady=10)
-
 def main():
-    root = tk.Tk()
+    root = TkinterDnD.Tk()
     app = PixelPruner(root)
     root.mainloop()
 

@@ -52,6 +52,8 @@ Follow these steps to install and run PixelPruner on your local machine.
 
 2. **Pillow**: This library is required for image processing. You can install it with the `pip` package manager.
 
+3. **Packaging**: The packaging library is very useful for handling version numbers in Python projects. It allows you to reliably compare versions.
+
 ### Step-by-Step Installation
 
 1. **Clone the Repository**
@@ -80,6 +82,7 @@ Follow these steps to install and run PixelPruner on your local machine.
     ```sh
     pip install pillow[webp]
     pip install tkinterdnd2
+    pip install packaging
     ```
 
     If you're on Linux, you might need to install tkinter separately:

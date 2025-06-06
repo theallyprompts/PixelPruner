@@ -132,4 +132,4 @@ Follow these steps to install and run PixelPruner on your local machine.
 
 ### Created By...
 
-**[TheAlly](https://civitai.com/user/theally)** - A coding amateur with zero application development experience. I threw this together with the help of **ChatGPT 4o** because I couldn't find a tool which offered the features I required in a cropping/data set prep tool for LoRA Training.
+**[TheAlly](https://civitai.com/user/theally)** - Vibe coding ftw!

@@ -9,6 +9,7 @@ import zipfile
 from datetime import datetime
 import webbrowser
 import winsound
+from packaging.version import parse
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -100,7 +101,7 @@ class PixelPruner:
         tk.Label(control_frame, text="Select crop size:").pack(side=tk.LEFT, padx=(10, 2))
         
         self.size_var = tk.StringVar()
-        self.size_dropdown = ttk.Combobox(control_frame, textvariable=self.size_var, state="readonly", values=["512x512", "768x768", "1024x1024", "2048x2048"])
+        self.size_dropdown = ttk.Combobox(control_frame, textvariable=self.size_var, state="readonly", values=["512x512", "768x768", "1024x1024", "2048x2048", "512x768", "768x512"])
         self.size_dropdown.pack(side=tk.LEFT, padx=(2, 20))
         self.size_dropdown.set("512x512")  # Default size
         self.size_dropdown.bind("<<ComboboxSelected>>", self.update_crop_box_size)
@@ -277,7 +278,7 @@ class PixelPruner:
         self.scaled_width = int(self.scaled_height * aspect_ratio) if self.scaled_height < self.scaled_width else self.scaled_width
         
         # Determine the appropriate resampling filter based on Pillow version
-        if PILLOW_VERSION >= "7.0.0":
+        if parse(PILLOW_VERSION) >= parse("7.0.0"):
             resampling_filter = Image.LANCZOS
         else:
             resampling_filter = Image.ANTIALIAS

@@ -104,7 +104,7 @@ Follow these steps to install and run PixelPruner on your local machine.
 
 **Select Crop Dimensions**: From the dropdown in the top left, select the output dimensions for your crops.
 
-**Set an output Directory** (optional): Click `File > Set Output Directory` to choose a folder to save your crops. If no directory is chosen, PixelPruner will place crops beside the original images. Note: if you've dragged images into PixelPruner, you must manually set an output directory.
+**Set an output directory** (optional): Click `File > Set Output Directory` to choose a folder to save your crops. If no directory is chosen, PixelPruner will place crops beside the original images. Note: if you've dragged images into PixelPruner, you must manually set an output directory.
 
 **Crop and Manage Images**: Use the interactive tools to crop, rotate, and manage your images. Cropped images can be previewed and saved to a custom output folder.
 

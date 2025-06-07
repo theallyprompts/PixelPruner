@@ -648,7 +648,7 @@ class PixelPruner:
 
     def load_images_from_folder(self):
         if not self.folder_path:
-            messagebox.showwarning("Warning", "No input folder set!")
+            messagebox.showwarning("Warning", f"No input folder set! Got: {self.folder_path}")
             return
 
         self.images = [os.path.join(self.folder_path, img) for img in os.listdir(self.folder_path) if img.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
@@ -730,66 +730,86 @@ class PixelPruner:
         link.bind("<Button-1>", lambda e: webbrowser.open_new("https://github.com/theallyprompts/PixelPruner"))
 
     def show_welcome_screen(self):
-        welcome_window = tk.Toplevel(self.master)
-        welcome_window.title("Welcome")
-        welcome_window.geometry("500x300")
-        welcome_window.resizable(False, False)
+        welcome = tk.Toplevel(self.master)
+        welcome.title("Welcome to PixelPruner")
+        welcome.geometry("520x380")
+        welcome.resizable(False, False)
+        welcome.grab_set()
 
-        welcome_window.update_idletasks()
-        window_width = welcome_window.winfo_width()
-        window_height = welcome_window.winfo_height()
-        screen_width = welcome_window.winfo_screenwidth()
-        screen_height = welcome_window.winfo_screenheight()
-        x = (screen_width // 2) - (window_width // 2)
-        y = (screen_height // 2) - (window_height // 2)
-        welcome_window.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        # Center it
+        welcome.update_idletasks()
+        w = welcome.winfo_width()
+        h = welcome.winfo_height()
+        sw = welcome.winfo_screenwidth()
+        sh = welcome.winfo_screenheight()
+        welcome.geometry(f"{w}x{h}+{(sw - w) // 2}+{(sh - h) // 2}")
 
-        tk.Label(welcome_window, text="Welcome to PixelPruner!", font=("Helvetica", 12)).pack(pady=10)
+        frame = tk.Frame(welcome, padx=20, pady=20)
+        frame.pack(expand=True, fill="both")
 
-        link = tk.Label(welcome_window, text="https://github.com/theallyprompts/PixelPruner", fg="blue", cursor="hand2")
+        tk.Label(frame, text="Welcome to PixelPruner!", font=("Helvetica", 14, "bold")).pack(pady=(0, 10))
+        tk.Label(frame, text="Crop, curate, and conquer your datasets.\n", justify="center").pack()
+
+        link = tk.Label(frame, text="View on GitHub", fg="blue", cursor="hand2")
         link.pack()
         link.bind("<Button-1>", lambda e: webbrowser.open_new("https://github.com/theallyprompts/PixelPruner"))
 
-        input_frame = tk.Frame(welcome_window)
-        input_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(input_frame, text="Default Input Folder:").pack(side=tk.LEFT)
-        input_var = tk.StringVar(value=self.default_input_folder)
-        input_entry = tk.Entry(input_frame, textvariable=input_var, width=40)
-        input_entry.pack(side=tk.LEFT, padx=(5, 0))
-        tk.Button(input_frame, text="Browse", command=lambda: browse_folder(input_var)).pack(side=tk.LEFT, padx=5)
+        donate = tk.Label(frame, text="Buy me a coffee ☕", fg="blue", cursor="hand2")
+        donate.pack(pady=(5, 15))
+        donate.bind("<Button-1>", lambda e: webbrowser.open_new("https://ko-fi.com/theallyprompts"))
 
-        output_frame = tk.Frame(welcome_window)
-        output_frame.pack(fill="x", padx=10, pady=5)
-        tk.Label(output_frame, text="Default Output Folder:").pack(side=tk.LEFT)
-        output_var = tk.StringVar(value=self.default_output_folder)
-        output_entry = tk.Entry(output_frame, textvariable=output_var, width=40)
-        output_entry.pack(side=tk.LEFT, padx=(5, 0))
-        tk.Button(output_frame, text="Browse", command=lambda: browse_folder(output_var)).pack(side=tk.LEFT, padx=5)
+        # Input Folder
+        tk.Label(frame, text="Default Input Folder:").pack(anchor="w")
+        input_row = tk.Frame(frame)
+        input_row.pack(fill="x")
+        input_entry = tk.Entry(input_row, width=50)
+        input_entry.insert(0, self.settings.get("default_input", ""))
+        input_entry.pack(side="left", fill="x", expand=True)
+        tk.Button(input_row, text="Select Folder", command=lambda: self._browse_folder(input_entry)).pack(side="right")
 
-        show_startup = tk.Checkbutton(welcome_window, text="Show Welcome at startup", variable=self.show_welcome_var)
-        show_startup.pack(pady=10)
+        # Output Folder
+        tk.Label(frame, text="Default Output Folder:").pack(anchor="w", pady=(10, 0))
+        output_row = tk.Frame(frame)
+        output_row.pack(fill="x")
+        output_entry = tk.Entry(output_row, width=50)
+        output_entry.insert(0, self.settings.get("default_output", ""))
+        output_entry.pack(side="left", fill="x", expand=True)
+        tk.Button(output_row, text="Select Folder", command=lambda: self._browse_folder(output_entry)).pack(side="right")
+
+        # Footer controls
+        footer = tk.Frame(frame)
+        footer.pack(fill="x", pady=(20, 0))
+
+        show_var = tk.BooleanVar(value=self.settings.get("show_welcome", True))
+        tk.Checkbutton(footer, text="Show Welcome at startup", variable=show_var).pack(side="left")
 
         def save_and_close():
-            self.default_input_folder = input_var.get()
-            self.default_output_folder = output_var.get()
-            if self.default_input_folder:
-                self.folder_path = self.default_input_folder
-            if self.default_output_folder:
-                self.output_folder = self.default_output_folder
+            self.settings["show_welcome"] = show_var.get()
+            self.show_welcome_var.set(show_var.get())            
+            self.settings["default_input_folder"] = input_entry.get()
+            self.settings["default_output_folder"] = output_entry.get()
+            self.default_input_folder = input_entry.get()
+            self.default_output_folder = output_entry.get()
+            self.folder_path = self.default_input_folder
+            self.output_folder = self.default_output_folder
             self.save_settings()
+            self.folder_path = input_entry.get()
+            self.output_folder = output_entry.get()
             if self.folder_path:
                 self.load_images_from_folder()
-            welcome_window.destroy()
+            self.update_status("Ready.")
+            welcome.destroy()
 
-        tk.Button(welcome_window, text="Save", command=save_and_close).pack(pady=5)
+        tk.Button(footer, text="Start Using PixelPruner", command=save_and_close).pack(side="right")
 
-        def browse_folder(var):
-            folder = filedialog.askdirectory()
-            if folder:
-                var.set(folder)
+    def _browse_folder(self, entry_widget):
+        path = filedialog.askdirectory(title="Select Folder")
+        if path:
+            entry_widget.delete(0, tk.END)
+            entry_widget.insert(0, path)
 
     def load_settings(self):
-        """Load settings from usersettings.json, creating it with defaults if needed."""
+        #Load settings from usersettings.json, creating it with defaults if needed.
         self.settings_path = os.path.join(app_path(), "usersettings.json")
         defaults = {
             "auto_advance": False,
@@ -819,17 +839,16 @@ class PixelPruner:
             self.output_folder = self.default_output_folder
 
     def save_settings(self):
-        """Save current settings to usersettings.json."""
-        settings = {
-            "auto_advance": self.auto_advance_var.get(),
-            "crop_sound": self.crop_sound_var.get(),
-            "show_welcome": self.show_welcome_var.get(),
-            "default_input_folder": self.default_input_folder,
-            "default_output_folder": self.default_output_folder,
-        }
+        # Update self.settings dict from current UI values
+        self.settings["auto_advance"] = self.auto_advance_var.get()
+        self.settings["crop_sound"] = self.crop_sound_var.get()
+        self.settings["show_welcome"] = self.show_welcome_var.get()
+        self.settings["default_input_folder"] = self.default_input_folder
+        self.settings["default_output_folder"] = self.default_output_folder
+
         try:
             with open(os.path.join(app_path(), "usersettings.json"), "w") as f:
-                json.dump(settings, f, indent=4)
+                json.dump(self.settings, f, indent=4)
         except Exception as e:
             print(f"Failed to save settings: {e}")
 

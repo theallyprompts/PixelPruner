@@ -108,7 +108,7 @@ def analyze_image(image_path):
         "reason": reason
     }
 
-def analyze_folder(folder_path, crops_only=True):
+def analyze_folder(folder_path, crops_only=True, progress_callback=None):
     """Analyze images in ``folder_path``.
 
     Parameters
@@ -119,6 +119,10 @@ def analyze_folder(folder_path, crops_only=True):
         If ``True`` only files whose names start with ``"cropped_"`` will be
         processed.  When ``False`` all supported image files are analyzed.
 
+    progress_callback : callable, optional
+        Function called with the current index and total count after each image
+        is processed.  This can be used to update a progress indicator.
+
     Returns
     -------
     list[dict]
@@ -126,11 +130,17 @@ def analyze_folder(folder_path, crops_only=True):
     """
 
     results = []
-    for file in os.listdir(folder_path):
-        if crops_only and not file.lower().startswith("cropped_"):
-            continue
-        if file.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
-            image_path = os.path.join(folder_path, file)
-            result = analyze_image(image_path)
-            results.append(result)
+    files = [
+        f
+        for f in os.listdir(folder_path)
+        if (not crops_only or f.lower().startswith("cropped_"))
+        and f.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))
+    ]
+    total = len(files)
+    for idx, file in enumerate(files, 1):
+        image_path = os.path.join(folder_path, file)
+        result = analyze_image(image_path)
+        results.append(result)
+        if progress_callback:
+            progress_callback(idx, total)
     return results

@@ -501,6 +501,11 @@ class PixelPruner:
         if not self.folder_path and not self.images:
             self.show_info_message("Information", "Please set an Input Folder from the File Menu!")
             return
+
+        if not self.images:
+            self.show_info_message("Information", "No images loaded.")
+            return
+
         self.image_index = (self.image_index + 1) % len(self.images)
         self.load_image()
 
@@ -508,6 +513,11 @@ class PixelPruner:
         if not self.folder_path and not self.images:
             self.show_info_message("Information", "Please set an Input Folder from the File Menu!")
             return
+
+        if not self.images:
+            self.show_info_message("Information", "No images loaded.")
+            return
+
         self.image_index = (self.image_index - 1) % len(self.images)
         self.load_image()
 

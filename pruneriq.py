@@ -29,9 +29,19 @@ from PIL import Image
 import cv2
 import numpy as np
 
-CONTRAST_THRESHOLD = 50
-CLARITY_THRESHOLD = 100
-NOISE_THRESHOLD = 50
+# Empirically tuned thresholds for a "good" image
+# Typical high‑quality crops have a contrast standard deviation
+# around 60–80 on the 0‑255 intensity scale.
+CONTRAST_THRESHOLD = 70
+
+# Laplacian variance for sharp images can easily exceed 200.
+CLARITY_THRESHOLD = 200
+
+# Noise variance from the blur residual often reaches the
+# thousands. Values under about 15000 typically correspond to
+# images that look relatively clean while larger values show
+# obvious grain.
+NOISE_THRESHOLD = 15000
 
 def _scale_score(value: float, threshold: float, reverse: bool = False) -> float:
     """Return a 0-100 score relative to the given threshold."""

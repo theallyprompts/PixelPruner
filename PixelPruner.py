@@ -1183,7 +1183,17 @@ class PixelPruner:
         def manual_reanalyze():
             run_analysis(current_folder)
 
+        def open_current_folder():
+            if os.path.isdir(current_folder):
+                subprocess.Popen([
+                    "explorer",
+                    current_folder.replace("/", "\\"),
+                ])
+
         tk.Button(path_frame, text="Change Folder", command=change_folder).pack(
+            side=tk.RIGHT, padx=5
+        )
+        tk.Button(path_frame, text="Open Folder", command=open_current_folder).pack(
             side=tk.RIGHT, padx=5
         )
         tk.Button(path_frame, text="Re-analyze", command=manual_reanalyze).pack(

@@ -958,9 +958,37 @@ class PixelPruner:
             nonlocal all_results, current_folder
             current_folder = path
             path_var.set(path)
-            all_results = analyze_folder(path, crops_only_var.get())
-            populate_tree(all_results)
-            update_summary()
+
+            progress = tk.Toplevel(window)
+            progress.title("Analyzing")
+            tk.Label(progress, text="Analyzing images...").pack(padx=20, pady=(10, 5))
+            progress_var = tk.StringVar(value="")
+            tk.Label(progress, textvariable=progress_var).pack(padx=20, pady=(0, 10))
+
+            progress.update_idletasks()
+            pw = progress.winfo_width()
+            ph = progress.winfo_height()
+            sx = progress.winfo_screenwidth()
+            sy = progress.winfo_screenheight()
+            progress.geometry(f"{pw}x{ph}+{sx//2 - pw//2}+{sy//2 - ph//2}")
+            progress.transient(window)
+            progress.grab_set()
+
+            def progress_callback(idx, total):
+                window.after(0, lambda: progress_var.set(f"{idx} of {total}"))
+
+            def worker():
+                res = analyze_folder(path, crops_only_var.get(), progress_callback)
+                window.after(0, lambda: finish(res))
+
+            def finish(res):
+                progress.destroy()
+                nonlocal all_results
+                all_results = res
+                populate_tree(all_results)
+                update_summary()
+
+            threading.Thread(target=worker, daemon=True).start()
 
         def change_folder():
             path = filedialog.askdirectory(title="Select Folder")
@@ -1121,7 +1149,7 @@ class PixelPruner:
         def delete_selected():
             for item in tree.selection():
                 filename = tree.set(item, "filename")
-                path = os.path.join(self.output_folder, filename)
+                path = os.path.join(current_folder, filename)
                 if os.path.exists(path):
                     os.remove(path)
                 tree.delete(item)
@@ -1130,7 +1158,7 @@ class PixelPruner:
             item = tree.focus()
             if item:
                 filename = tree.set(item, "filename")
-                path = os.path.join(self.output_folder, filename)
+                path = os.path.join(current_folder, filename)
                 self.view_image(path)
 
         tree.bind("<Double-1>", on_double_click)

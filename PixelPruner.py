@@ -101,8 +101,12 @@ class PixelPruner:
         self.menu_bar.add_cascade(label="Settings", menu=self.settings_menu)
         self.auto_advance_var = tk.BooleanVar(value=False)
         self.crop_sound_var = tk.BooleanVar(value=False)
+        self.show_welcome_var = tk.BooleanVar(value=True)
+        self.default_input_folder = ""
+        self.default_output_folder = ""
         self.settings_menu.add_checkbutton(label="Auto-advance", variable=self.auto_advance_var, command=self.save_settings)
         self.settings_menu.add_checkbutton(label="Crop Sound", variable=self.crop_sound_var, command=self.save_settings)
+        self.settings_menu.add_command(label="Set Default Paths", command=self.show_welcome_screen)
 
         # Create the Tools menu
         self.tools_menu = tk.Menu(self.menu_bar, tearoff=0)
@@ -193,7 +197,7 @@ class PixelPruner:
 
         self.status_bar = tk.Frame(master, bd=1, relief=tk.SUNKEN)
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-        self.status_label = tk.Label(self.status_bar, text="Welcome to PixelPruner - Version 2.0.0", anchor=tk.W)
+        self.status_label = tk.Label(self.status_bar, text="Welcome to PixelPruner - Version 2.1.0", anchor=tk.W)
         self.status_label.pack(side=tk.LEFT, padx=10)
         self.cropped_images_label = tk.Label(self.status_bar, text="Images Cropped: 0", anchor=tk.E)
         self.cropped_images_label.pack(side=tk.RIGHT, padx=10)
@@ -251,9 +255,12 @@ class PixelPruner:
         # Load user settings and apply them
         self.load_settings()
         self.master.protocol("WM_DELETE_WINDOW", self.on_close)
-        
+
         # Center the window on the screen
         self.center_window()
+
+        if self.show_welcome_var.get():
+            self.show_welcome_screen()
 
     def center_window(self):
         self.master.update_idletasks()
@@ -551,7 +558,7 @@ class PixelPruner:
         self.load_image()
 
     def select_input_folder(self):
-        selected_folder = filedialog.askdirectory(title="Select Input Folder")
+        selected_folder = filedialog.askdirectory(title="Select Input Folder", initialdir=self.default_input_folder or None)
         if selected_folder:
             self.folder_path = selected_folder
             self.load_images_from_folder()
@@ -559,7 +566,7 @@ class PixelPruner:
             messagebox.showwarning("Warning", "No input folder selected!")
 
     def select_output_folder(self):
-        selected_folder = filedialog.askdirectory(title="Select Custom Output Folder")
+        selected_folder = filedialog.askdirectory(title="Select Custom Output Folder", initialdir=self.default_output_folder or None)
         if selected_folder:
             self.output_folder = selected_folder
         else:
@@ -704,7 +711,7 @@ class PixelPruner:
         about_window.geometry(f'{window_width}x{window_height}+{x}+{y}')
 
         about_text = (
-            "Version 2.0.0 - 5/19/2024\n\n"
+            "Version 2.1.0 - 5/19/2024\n\n"
             "Developed by TheAlly and GPT4o\n\n"
             "About: Prepare your LoRA training data with ease! "
             "Check out the GitHub Repo for the full feature list.\n\n"
@@ -722,10 +729,75 @@ class PixelPruner:
         link.pack(side=tk.LEFT)
         link.bind("<Button-1>", lambda e: webbrowser.open_new("https://github.com/theallyprompts/PixelPruner"))
 
+    def show_welcome_screen(self):
+        welcome_window = tk.Toplevel(self.master)
+        welcome_window.title("Welcome")
+        welcome_window.geometry("500x300")
+        welcome_window.resizable(False, False)
+
+        welcome_window.update_idletasks()
+        window_width = welcome_window.winfo_width()
+        window_height = welcome_window.winfo_height()
+        screen_width = welcome_window.winfo_screenwidth()
+        screen_height = welcome_window.winfo_screenheight()
+        x = (screen_width // 2) - (window_width // 2)
+        y = (screen_height // 2) - (window_height // 2)
+        welcome_window.geometry(f"{window_width}x{window_height}+{x}+{y}")
+
+        tk.Label(welcome_window, text="Welcome to PixelPruner!", font=("Helvetica", 12)).pack(pady=10)
+
+        link = tk.Label(welcome_window, text="https://github.com/theallyprompts/PixelPruner", fg="blue", cursor="hand2")
+        link.pack()
+        link.bind("<Button-1>", lambda e: webbrowser.open_new("https://github.com/theallyprompts/PixelPruner"))
+
+        input_frame = tk.Frame(welcome_window)
+        input_frame.pack(fill="x", padx=10, pady=5)
+        tk.Label(input_frame, text="Default Input Folder:").pack(side=tk.LEFT)
+        input_var = tk.StringVar(value=self.default_input_folder)
+        input_entry = tk.Entry(input_frame, textvariable=input_var, width=40)
+        input_entry.pack(side=tk.LEFT, padx=(5, 0))
+        tk.Button(input_frame, text="Browse", command=lambda: browse_folder(input_var)).pack(side=tk.LEFT, padx=5)
+
+        output_frame = tk.Frame(welcome_window)
+        output_frame.pack(fill="x", padx=10, pady=5)
+        tk.Label(output_frame, text="Default Output Folder:").pack(side=tk.LEFT)
+        output_var = tk.StringVar(value=self.default_output_folder)
+        output_entry = tk.Entry(output_frame, textvariable=output_var, width=40)
+        output_entry.pack(side=tk.LEFT, padx=(5, 0))
+        tk.Button(output_frame, text="Browse", command=lambda: browse_folder(output_var)).pack(side=tk.LEFT, padx=5)
+
+        show_startup = tk.Checkbutton(welcome_window, text="Show Welcome at startup", variable=self.show_welcome_var)
+        show_startup.pack(pady=10)
+
+        def save_and_close():
+            self.default_input_folder = input_var.get()
+            self.default_output_folder = output_var.get()
+            if self.default_input_folder:
+                self.folder_path = self.default_input_folder
+            if self.default_output_folder:
+                self.output_folder = self.default_output_folder
+            self.save_settings()
+            if self.folder_path:
+                self.load_images_from_folder()
+            welcome_window.destroy()
+
+        tk.Button(welcome_window, text="Save", command=save_and_close).pack(pady=5)
+
+        def browse_folder(var):
+            folder = filedialog.askdirectory()
+            if folder:
+                var.set(folder)
+
     def load_settings(self):
         """Load settings from usersettings.json, creating it with defaults if needed."""
         self.settings_path = os.path.join(app_path(), "usersettings.json")
-        defaults = {"auto_advance": False, "crop_sound": False}
+        defaults = {
+            "auto_advance": False,
+            "crop_sound": False,
+            "show_welcome": True,
+            "default_input_folder": "",
+            "default_output_folder": "",
+        }
         if not os.path.exists(self.settings_path):
             self.settings = defaults
             self.save_settings()
@@ -737,12 +809,23 @@ class PixelPruner:
             self.settings = defaults
         self.auto_advance_var.set(self.settings.get("auto_advance", False))
         self.crop_sound_var.set(self.settings.get("crop_sound", False))
+        self.show_welcome_var.set(self.settings.get("show_welcome", True))
+        self.default_input_folder = self.settings.get("default_input_folder", "")
+        self.default_output_folder = self.settings.get("default_output_folder", "")
+
+        if self.default_input_folder and os.path.isdir(self.default_input_folder):
+            self.folder_path = self.default_input_folder
+        if self.default_output_folder and os.path.isdir(self.default_output_folder):
+            self.output_folder = self.default_output_folder
 
     def save_settings(self):
         """Save current settings to usersettings.json."""
         settings = {
             "auto_advance": self.auto_advance_var.get(),
             "crop_sound": self.crop_sound_var.get(),
+            "show_welcome": self.show_welcome_var.get(),
+            "default_input_folder": self.default_input_folder,
+            "default_output_folder": self.default_output_folder,
         }
         try:
             with open(os.path.join(app_path(), "usersettings.json"), "w") as f:

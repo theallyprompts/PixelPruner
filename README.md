@@ -25,6 +25,7 @@ PixelPruner is a user-friendly image cropping app for AI-generated art. It suppo
   ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/9dac7fdb-6bb8-4c46-a863-9506701b219a)
 
 - **Customizable Output Folder**: Choose a custom folder to save your cropped images.
+- **Default Directories**: Set default input and output folders from the welcome screen or via `Settings > Set Default Paths`.
 
 - **Zip Crops**: Quickly zip all cropped images into a single archive for easy sharing, storage, or upload to the Civitai.com on-site LoRA Trainer
 

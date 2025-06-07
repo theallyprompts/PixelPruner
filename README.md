@@ -44,7 +44,12 @@ The built-in *PrunerIQ* analysis examines your cropped images and scores them us
 - **Noise** – difference between the image and a blurred copy. Lower numbers mean less noise.
 - **Aesthetic** – placeholder score for future updates.
 
-Each crop receives a rating from **Poor** to **Excellent** based on the above metrics. When viewing the analysis window you can sort, filter ranges, and delete any undesirable crops.
+Each metric is also normalised into a 0‑100 percentage shown in the analysis table
+(`Contrast (%)`, `Clarity (%)`, and `Noise (%)`).  These give a quick visual cue
+of how close the measurement is to the recommended threshold values.  Each crop
+receives a rating from **Poor** to **Excellent** based on the metrics. When
+viewing the analysis window you can sort, filter ranges, and delete any
+undesirable crops.
 
   ---
 

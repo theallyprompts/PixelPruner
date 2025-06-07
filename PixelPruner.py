@@ -421,7 +421,7 @@ class PixelPruner:
         base_filename = os.path.basename(image_path)
         filename, ext = os.path.splitext(base_filename)
         cropped_filename = f"cropped_{self.crop_counter}_{filename}.png"
-        cropped_filepath = os.path.join(self.output_folder, cropped_filename).replace("/", "\\")
+        cropped_filepath = os.path.join(self.output_folder, cropped_filename)
         cropped.save(cropped_filepath, "PNG")
         self.cropped_images.insert(0, cropped_filepath)  # Insert at the beginning of the list
         self.update_cropped_images_counter()
@@ -432,8 +432,9 @@ class PixelPruner:
 
         # Create thumbnail and update crops canvas
         self.update_crops_canvas(cropped, cropped_filepath)
-        cropped_filepath_forward_slash = cropped_filepath.replace("\\", "/")
-        self.update_status(f"Cropped image saved as {cropped_filepath_forward_slash}")
+        cropped_filepath = os.path.join(self.output_folder, cropped_filename)
+        normalized_path = os.path.normpath(cropped_filepath)
+        self.update_status(f"Cropped image saved as {normalized_path}")
 
     def update_crops_canvas(self, cropped, filepath):
         cropped.thumbnail((256, 256))  # Create larger thumbnail

@@ -96,6 +96,7 @@ class PixelPruner:
         self.menu_bar.add_cascade(label="View", menu=self.view_menu)
         self.view_menu.add_command(label="Preview Pane", command=lambda: self.toggle_pane("preview"))
         self.view_menu.add_command(label="Crops Pane", command=lambda: self.toggle_pane("crops"))
+        self.view_menu.add_command(label="Sources Pane", command=lambda: self.toggle_pane("source"))
 
         # Create the Settings menu
         self.settings_menu = tk.Menu(self.menu_bar, tearoff=0)
@@ -254,6 +255,18 @@ class PixelPruner:
         self.crops_canvas.bind("<Enter>", self.bind_crops_mouse_wheel)
         self.crops_canvas.bind("<Leave>", self.unbind_crops_mouse_wheel)
 
+        # Create a frame for the source images pane with a scrollable canvas
+        self.source_frame = tk.Frame(self.main_frame)
+        self.source_canvas = tk.Canvas(self.source_frame, bg="gray", width=512)
+        self.source_scrollbar = tk.Scrollbar(self.source_frame, orient="vertical", command=self.source_canvas.yview)
+        self.source_canvas.configure(yscrollcommand=self.source_scrollbar.set)
+        self.source_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.source_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.source_frame.pack_forget()  # Hide source pane initially
+
+        self.source_canvas.bind("<Enter>", lambda e: self.source_canvas.bind_all("<MouseWheel>", self.on_source_mouse_wheel))
+        self.source_canvas.bind("<Leave>", lambda e: self.source_canvas.unbind_all("<MouseWheel>"))
+
         self.status_bar = tk.Frame(master, bd=1, relief=tk.SUNKEN)
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
         self.status_label = tk.Label(self.status_bar, text="Welcome to PixelPruner - Version 2.1.0", anchor=tk.W)
@@ -275,8 +288,10 @@ class PixelPruner:
         self.crop_counter = 0  # Global counter for all crops
         self.cropped_images = []  # List to keep track of cropped images
         self.cropped_thumbnails = []  # List to keep track of cropped thumbnails
+        self.source_thumbnails = []  # Thumbnails for source images
         self.preview_enabled = False  # Preview pane toggle
         self.crops_enabled = False  # Crop thumbnails pane toggle
+        self.source_enabled = False  # Source images pane toggle
 
         # Load delete image for the crops pane
         try:
@@ -521,6 +536,9 @@ class PixelPruner:
     def on_crops_mouse_wheel(self, event):
         self.crops_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
+    def on_source_mouse_wheel(self, event):
+        self.source_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
     def crop_image(self, x1, y1, x2, y2):
         real_x1, real_y1 = (x1 - self.image_offset_x) * self.image_scale, (y1 - self.image_offset_y) * self.image_scale
         real_x2, real_y2 = (x2 - self.image_offset_x) * self.image_scale, (y2 - self.image_offset_y) * self.image_scale
@@ -605,6 +623,35 @@ class PixelPruner:
     def update_crops_canvas_layout(self):
         """Legacy wrapper kept for backward compatibility."""
         self.refresh_crops_canvas()
+
+    def update_source_canvas(self):
+        """Generate thumbnails for source images and rebuild the gallery."""
+        self.source_thumbnails = []
+        for path in self.images:
+            try:
+                img = Image.open(path)
+                img.thumbnail((128, 128))
+                tkthumb = ImageTk.PhotoImage(img)
+                self.source_thumbnails.append((tkthumb, path))
+            except Exception:
+                continue
+        self.refresh_source_canvas()
+
+    def refresh_source_canvas(self):
+        self.source_canvas.delete("all")
+        cols = 3
+        spacing = 10
+        for index, (thumb, path) in enumerate(self.source_thumbnails):
+            row, col = divmod(index, cols)
+            x, y = col * (128 + spacing), row * (128 + spacing)
+            img_id = self.source_canvas.create_image(x, y, anchor="nw", image=thumb)
+            self.source_canvas.tag_bind(img_id, "<Button-1>", lambda e, p=path: self.load_image_from_gallery(p))
+        self.source_canvas.config(scrollregion=self.source_canvas.bbox("all"))
+
+    def load_image_from_gallery(self, path):
+        if path in self.images:
+            self.image_index = self.images.index(path)
+            self.load_image()
 
     def perform_crop(self):
         if not self.folder_path and not self.images:
@@ -693,21 +740,35 @@ class PixelPruner:
         if pane == "preview":
             self.preview_enabled = not self.preview_enabled
             self.crops_enabled = False
+            self.source_enabled = False
         elif pane == "crops":
             self.crops_enabled = not self.crops_enabled
             self.preview_enabled = False
+            self.source_enabled = False
+        elif pane == "source":
+            self.source_enabled = not self.source_enabled
+            self.preview_enabled = False
+            self.crops_enabled = False
 
         if self.preview_enabled:
             self.master.geometry(f"1550x800")  # Adjusted size to fit the larger preview pane
             self.preview_canvas.pack(side=tk.RIGHT, padx=5, pady=5, fill=tk.BOTH, expand=False)
             self.crops_frame.pack_forget()
+            self.source_frame.pack_forget()
         elif self.crops_enabled:
             self.master.geometry(f"1550x800")  # Adjusted size to fit the crops pane
             self.crops_frame.pack(side=tk.RIGHT, padx=5, pady=5, fill=tk.BOTH, expand=False)
             self.preview_canvas.pack_forget()
+            self.source_frame.pack_forget()
+        elif self.source_enabled:
+            self.master.geometry(f"1550x800")
+            self.source_frame.pack(side=tk.RIGHT, padx=5, pady=5, fill=tk.BOTH, expand=False)
+            self.preview_canvas.pack_forget()
+            self.crops_frame.pack_forget()
         else:
             self.preview_canvas.pack_forget()
             self.crops_frame.pack_forget()
+            self.source_frame.pack_forget()
             self.master.geometry(f"1300x750")  # Resize the window back to normal
         
         # Workaround to ensure the main image is centered after toggling panes
@@ -742,6 +803,7 @@ class PixelPruner:
         self.load_image()
         self.update_image_counter()
         self.update_status(f"Loaded {len(self.images)} images from {self.folder_path}")
+        self.update_source_canvas()
 
     def load_images_from_list(self, file_list):
         self.images = [file for file in file_list if file.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
@@ -753,6 +815,7 @@ class PixelPruner:
         self.load_image()
         self.update_image_counter()
         self.update_status(f"Loaded {len(self.images)} images from dropped files")
+        self.update_source_canvas()
 
     def on_drop(self, event):
         file_list = self.master.tk.splitlist(event.data)
@@ -785,6 +848,9 @@ class PixelPruner:
                 self.image_index = 0
             self.load_image()
             self.update_image_counter()
+            # Remove from source thumbnails and refresh gallery
+            self.source_thumbnails = [(t, p) for t, p in self.source_thumbnails if p != image_path]
+            self.refresh_source_canvas()
             image_path_forward_slash = image_path.replace("\\", "/")
             self.update_status(f"Deleted image {image_path_forward_slash}")
 

@@ -624,10 +624,11 @@ class PixelPruner:
         """Legacy wrapper kept for backward compatibility."""
         self.refresh_crops_canvas()
 
-    def update_source_canvas(self):
+    def update_source_canvas(self, progress_callback=None):
         """Generate thumbnails for source images and rebuild the gallery."""
         self.source_thumbnails = []
-        for path in self.images:
+        total = len(self.images)
+        for idx, path in enumerate(self.images, start=1):
             try:
                 img = Image.open(path)
                 img.thumbnail((128, 128))
@@ -635,15 +636,23 @@ class PixelPruner:
                 self.source_thumbnails.append((tkthumb, path))
             except Exception:
                 continue
+            if progress_callback:
+                progress_callback(idx, total)
         self.refresh_source_canvas()
 
     def refresh_source_canvas(self):
         self.source_canvas.delete("all")
+        self.source_canvas.update_idletasks()
+        canvas_width = self.source_canvas.winfo_width()
         cols = 3
         spacing = 10
+        thumb_w = 128
+        total_width = cols * thumb_w + (cols - 1) * spacing
+        offset_x = max(0, (canvas_width - total_width) // 2)
         for index, (thumb, path) in enumerate(self.source_thumbnails):
             row, col = divmod(index, cols)
-            x, y = col * (128 + spacing), row * (128 + spacing)
+            x = offset_x + col * (thumb_w + spacing)
+            y = row * (128 + spacing)
             img_id = self.source_canvas.create_image(x, y, anchor="nw", image=thumb)
             self.source_canvas.tag_bind(img_id, "<Button-1>", lambda e, p=path: self.load_image_from_gallery(p))
         self.source_canvas.config(scrollregion=self.source_canvas.bbox("all"))
@@ -799,11 +808,37 @@ class PixelPruner:
             messagebox.showerror("Error", "No valid images found in the selected directory.")
             return
 
+        progress = None
+        progress_var = None
+        if len(self.images) > 30:
+            progress = tk.Toplevel(self.master)
+            progress.title("Loading")
+            tk.Label(progress, text="Loading images...").pack(padx=20, pady=(10, 5))
+            progress_var = tk.StringVar(value="")
+            tk.Label(progress, textvariable=progress_var).pack(padx=20, pady=(0, 10))
+            progress.update_idletasks()
+            pw = progress.winfo_width()
+            ph = progress.winfo_height()
+            sw = progress.winfo_screenwidth()
+            sh = progress.winfo_screenheight()
+            progress.geometry(f"{pw}x{ph}+{sw//2 - pw//2}+{sh//2 - ph//2}")
+            progress.transient(self.master)
+            progress.grab_set()
+
+            def cb(idx, total):
+                progress_var.set(f"{idx} of {total}")
+                progress.update_idletasks()
+        else:
+            def cb(idx, total):
+                pass
+
         self.image_index = 0
         self.load_image()
         self.update_image_counter()
         self.update_status(f"Loaded {len(self.images)} images from {self.folder_path}")
-        self.update_source_canvas()
+        self.update_source_canvas(cb)
+        if progress:
+            progress.destroy()
 
     def load_images_from_list(self, file_list):
         self.images = [file for file in file_list if file.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
@@ -811,11 +846,37 @@ class PixelPruner:
             messagebox.showerror("Error", "No valid images found in the dropped files.")
             return
 
+        progress = None
+        progress_var = None
+        if len(self.images) > 30:
+            progress = tk.Toplevel(self.master)
+            progress.title("Loading")
+            tk.Label(progress, text="Loading images...").pack(padx=20, pady=(10, 5))
+            progress_var = tk.StringVar(value="")
+            tk.Label(progress, textvariable=progress_var).pack(padx=20, pady=(0, 10))
+            progress.update_idletasks()
+            pw = progress.winfo_width()
+            ph = progress.winfo_height()
+            sw = progress.winfo_screenwidth()
+            sh = progress.winfo_screenheight()
+            progress.geometry(f"{pw}x{ph}+{sw//2 - pw//2}+{sh//2 - ph//2}")
+            progress.transient(self.master)
+            progress.grab_set()
+
+            def cb(idx, total):
+                progress_var.set(f"{idx} of {total}")
+                progress.update_idletasks()
+        else:
+            def cb(idx, total):
+                pass
+
         self.image_index = 0
         self.load_image()
         self.update_image_counter()
         self.update_status(f"Loaded {len(self.images)} images from dropped files")
-        self.update_source_canvas()
+        self.update_source_canvas(cb)
+        if progress:
+            progress.destroy()
 
     def on_drop(self, event):
         file_list = self.master.tk.splitlist(event.data)

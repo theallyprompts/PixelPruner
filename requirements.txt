@@ -8,3 +8,9 @@ pillow
 
 # Version parsing
 packaging
+
+# Image Analysis
+opencv-python
+
+# Image Analysis
+numpy

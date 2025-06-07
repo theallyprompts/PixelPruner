@@ -893,13 +893,18 @@ class PixelPruner:
             self.show_info_message("Information", "Please set or create an Output Folder first!")
             return
 
-        results = analyze_folder(self.output_folder)
-        self.show_analysis_results(results)
+        folder = self.output_folder
+        results = analyze_folder(folder)
+        self.show_analysis_results(results, folder)
 
 
-    def show_analysis_results(self, results):
+    def show_analysis_results(self, results, folder_path):
+        from pruneriq import analyze_folder
         if not results:
-            self.show_info_message("Analysis", "No valid crops were found in the selected output folder.")
+            self.show_info_message(
+                "Analysis",
+                "No valid crops were found in the selected output folder.",
+            )
             return
 
         window = tk.Toplevel(self.master)
@@ -914,6 +919,39 @@ class PixelPruner:
         x = (screen_width // 2) - (window_width // 2)
         y = (screen_height // 2) - (window_height // 2)
         window.geometry(f"{window_width}x{window_height}+{x}+{y}")
+
+        current_folder = folder_path
+        path_var = tk.StringVar(value=current_folder)
+
+        path_frame = tk.Frame(window)
+        path_frame.pack(fill=tk.X, padx=5, pady=5)
+        tk.Label(path_frame, text="Analyzing Crops in:").pack(side=tk.LEFT)
+        tk.Label(path_frame, textvariable=path_var, anchor="w").pack(
+            side=tk.LEFT, fill=tk.X, expand=True
+        )
+
+        def run_analysis(path):
+            nonlocal all_results, current_folder
+            current_folder = path
+            path_var.set(path)
+            all_results = analyze_folder(path)
+            populate_tree(all_results)
+            update_summary()
+
+        def change_folder():
+            path = filedialog.askdirectory(title="Select Folder")
+            if path:
+                run_analysis(path)
+
+        def manual_reanalyze():
+            run_analysis(current_folder)
+
+        tk.Button(path_frame, text="Change Folder", command=change_folder).pack(
+            side=tk.RIGHT, padx=5
+        )
+        tk.Button(path_frame, text="Re-analyze", command=manual_reanalyze).pack(
+            side=tk.RIGHT, padx=5
+        )
 
         columns = (
             "filename",
@@ -1065,24 +1103,34 @@ class PixelPruner:
 
         button_frame = tk.Frame(window)
         button_frame.pack(fill=tk.X, pady=5)
-        tk.Button(button_frame, text="Delete Selected", command=delete_selected).pack(side=tk.RIGHT, padx=5)
+        tk.Button(button_frame, text="Delete Selected", command=delete_selected).pack(
+            side=tk.RIGHT, padx=5
+        )
 
-        # Add summary statistics at the bottom
-        avg_contrast = sum(r["contrast"] for r in results) / len(results)
-        avg_clarity = sum(r["clarity"] for r in results) / len(results)
-        avg_noise = sum(r["noise"] for r in results) / len(results)
-        avg_contrast_pct = sum(r["contrast_pct"] for r in results) / len(results)
-        avg_clarity_pct = sum(r["clarity_pct"] for r in results) / len(results)
-        avg_noise_pct = sum(r["noise_pct"] for r in results) / len(results)
-        summary = (
-            f"Images: {len(results)}\n"
-            f"Avg Contrast: {avg_contrast:.2f} ({avg_contrast_pct:.0f}%)   "
-            f"Avg Clarity: {avg_clarity:.2f} ({avg_clarity_pct:.0f}%)   "
-            f"Avg Noise: {avg_noise:.2f} ({avg_noise_pct:.0f}%)"
-    )
-
-        summary_label = tk.Label(window, text=summary, font=("Helvetica", 10), anchor="w", justify="left")
+        summary_label = tk.Label(
+            window, font=("Helvetica", 10), anchor="w", justify="left"
+        )
         summary_label.pack(padx=10, pady=10, anchor="w")
+
+        def update_summary():
+            if not all_results:
+                summary = "Images: 0"
+            else:
+                avg_contrast = sum(r["contrast"] for r in all_results) / len(all_results)
+                avg_clarity = sum(r["clarity"] for r in all_results) / len(all_results)
+                avg_noise = sum(r["noise"] for r in all_results) / len(all_results)
+                avg_contrast_pct = sum(r["contrast_pct"] for r in all_results) / len(all_results)
+                avg_clarity_pct = sum(r["clarity_pct"] for r in all_results) / len(all_results)
+                avg_noise_pct = sum(r["noise_pct"] for r in all_results) / len(all_results)
+                summary = (
+                    f"Images: {len(all_results)}\n"
+                    f"Avg Contrast: {avg_contrast:.2f} ({avg_contrast_pct:.0f}%)   "
+                    f"Avg Clarity: {avg_clarity:.2f} ({avg_clarity_pct:.0f}%)   "
+                    f"Avg Noise: {avg_noise:.2f} ({avg_noise_pct:.0f}%)"
+                )
+            summary_label.config(text=summary)
+
+        update_summary()
 
 
     def on_close(self):

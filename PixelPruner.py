@@ -920,7 +920,6 @@ class PixelPruner:
             "contrast",
             "clarity",
             "noise",
-            "aesthetic",
             "rating",
         )
         tree = ttk.Treeview(window, columns=columns, show="headings")
@@ -944,7 +943,6 @@ class PixelPruner:
             "contrast": 110,
             "clarity": 110,
             "noise": 110,
-            "aesthetic": 80,
             "rating": 80,
         }
 
@@ -973,7 +971,6 @@ class PixelPruner:
                         f"{result['contrast']:.2f} ({result['contrast_pct']:.0f}%)",
                         f"{result['clarity']:.2f} ({result['clarity_pct']:.0f}%)",
                         f"{result['noise']:.2f} ({result['noise_pct']:.0f}%)",
-                        f"{result['aesthetic']:.2f}",
                         result["rating"],
                     ),
                 )
@@ -1077,14 +1074,11 @@ class PixelPruner:
         avg_contrast_pct = sum(r["contrast_pct"] for r in results) / len(results)
         avg_clarity_pct = sum(r["clarity_pct"] for r in results) / len(results)
         avg_noise_pct = sum(r["noise_pct"] for r in results) / len(results)
-        avg_aesthetic = sum(r["aesthetic"] for r in results) / len(results)
-
         summary = (
             f"Images: {len(results)}\n"
             f"Avg Contrast: {avg_contrast:.2f} ({avg_contrast_pct:.0f}%)   "
             f"Avg Clarity: {avg_clarity:.2f} ({avg_clarity_pct:.0f}%)   "
-            f"Avg Noise: {avg_noise:.2f} ({avg_noise_pct:.0f}%)   "
-            f"Avg Aesthetic: {avg_aesthetic:.2f}"
+            f"Avg Noise: {avg_noise:.2f} ({avg_noise_pct:.0f}%)"
     )
 
         summary_label = tk.Label(window, text=summary, font=("Helvetica", 10), anchor="w", justify="left")

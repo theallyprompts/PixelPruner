@@ -34,6 +34,8 @@ PixelPruner is a user-friendly image cropping app for AI-generated art. It suppo
 - **Undo Crop Actions**: Made a mistake? Simply undo the last crop with the click of a button.
 
 - **Keyboard Shortcuts**: Navigate and manipulate images effortlessly with convenient WASD keyboard shortcuts.
+- **Flexible Analysis**: The PrunerIQ window includes a `Crops Only` checkbox so
+  you can analyze either just the cropped images or all images in a folder.
 
 ### PrunerIQ Metrics
 

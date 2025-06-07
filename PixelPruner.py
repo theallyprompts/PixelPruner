@@ -898,14 +898,14 @@ class PixelPruner:
 
         loading = tk.Toplevel(self.master)
         loading.title("Please Wait")
-        tk.Label(loading, text="Analyzing crops...").pack(padx=20, pady=20)
+        tk.Label(loading, text="Analyzing images...").pack(padx=20, pady=20)
         loading.update()
 
         results = []
 
         def run_analysis():
             nonlocal results
-            results = analyze_folder(folder)
+            results = analyze_folder(folder, True)
             self.master.after(0, finish)
 
         def finish():
@@ -920,7 +920,7 @@ class PixelPruner:
         if not results:
             self.show_info_message(
                 "Analysis",
-                "No valid crops were found in the selected output folder.",
+                "No valid images were found in the selected output folder.",
             )
             return
 
@@ -942,16 +942,23 @@ class PixelPruner:
 
         path_frame = tk.Frame(window)
         path_frame.pack(fill=tk.X, padx=5, pady=5)
-        tk.Label(path_frame, text="Analyzing Crops in:").pack(side=tk.LEFT)
+        tk.Label(path_frame, text="Analyzing Images in:").pack(side=tk.LEFT)
         tk.Label(path_frame, textvariable=path_var, anchor="w").pack(
             side=tk.LEFT, fill=tk.X, expand=True
         )
+
+        crops_only_var = tk.BooleanVar(value=True)
+        tk.Checkbutton(
+            path_frame,
+            text="Crops Only",
+            variable=crops_only_var,
+        ).pack(side=tk.RIGHT, padx=5)
 
         def run_analysis(path):
             nonlocal all_results, current_folder
             current_folder = path
             path_var.set(path)
-            all_results = analyze_folder(path)
+            all_results = analyze_folder(path, crops_only_var.get())
             populate_tree(all_results)
             update_summary()
 

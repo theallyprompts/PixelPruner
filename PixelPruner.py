@@ -763,7 +763,7 @@ class PixelPruner:
         input_row = tk.Frame(frame)
         input_row.pack(fill="x")
         input_entry = tk.Entry(input_row, width=50)
-        input_entry.insert(0, self.settings.get("default_input", ""))
+        input_entry.insert(0, self.settings.get("default_input_folder", ""))
         input_entry.pack(side="left", fill="x", expand=True)
         tk.Button(input_row, text="Select Folder", command=lambda: self._browse_folder(input_entry)).pack(side="right")
 
@@ -772,7 +772,7 @@ class PixelPruner:
         output_row = tk.Frame(frame)
         output_row.pack(fill="x")
         output_entry = tk.Entry(output_row, width=50)
-        output_entry.insert(0, self.settings.get("default_output", ""))
+        output_entry.insert(0, self.settings.get("default_output_folder", ""))
         output_entry.pack(side="left", fill="x", expand=True)
         tk.Button(output_row, text="Select Folder", command=lambda: self._browse_folder(output_entry)).pack(side="right")
 
@@ -864,7 +864,7 @@ class PixelPruner:
 
     def show_analysis_results(self, results):
         if not results:
-            self.show_info_message("Analysis", "No images were found in the output folder.")
+            self.show_info_message("Analysis", "No valid crops were found in the selected output folder.")
             return
 
         window = tk.Toplevel(self.master)

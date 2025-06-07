@@ -17,7 +17,7 @@ def resource_path(relative_path):
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
-        base_path = os.path.abspath(".")
+        base_path = os.path.abspath(os.path.dirname(__file__))
     
     return os.path.join(base_path, relative_path)
 
@@ -294,7 +294,7 @@ class PixelPruner:
         size = tuple(map(int, self.size_var.get().split('x')))
         self.original_size = size
         self.current_size = size
-        scaled_size = (int(size[0] / self.image_scale), int(size[1] / self.image_scale))  # Define scaled_size here
+        scaled_size = (int(size[0] / self.image_scale), int(size[1] / self.image_scale))  # Scale crop box to match displayed image
         self.rect = self.canvas.create_rectangle(self.image_offset_x, self.image_offset_y, self.image_offset_x + scaled_size[0], self.image_offset_y + scaled_size[1], outline='red')
         self.update_crop_box_size()
         self.update_image_counter()

@@ -1,0 +1,10 @@
+#pip install -r requirements.txt
+
+# GUI and file management
+tkinterdnd2
+
+# Image handling
+pillow
+
+# Version parsing
+packaging

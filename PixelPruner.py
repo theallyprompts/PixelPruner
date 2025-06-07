@@ -11,6 +11,14 @@ import webbrowser
 import winsound
 from packaging.version import parse
 
+# For Pillow >= 10
+try:
+    from PIL import Image, ImageTk, __version__ as PILLOW_VERSION
+    Resampling = Image.Resampling
+except AttributeError:
+    # For older versions
+    Resampling = Image
+
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
@@ -277,12 +285,8 @@ class PixelPruner:
         self.scaled_height = int(self.scaled_width / aspect_ratio) if aspect_ratio > 1 else min(600, self.current_image.height)
         self.scaled_width = int(self.scaled_height * aspect_ratio) if self.scaled_height < self.scaled_width else self.scaled_width
         
-        # Determine the appropriate resampling filter based on Pillow version
-        if parse(PILLOW_VERSION) >= parse("7.0.0"):
-            resampling_filter = Image.LANCZOS
-        else:
-            resampling_filter = Image.ANTIALIAS
-
+        resampling_filter = Resampling.LANCZOS
+        
         self.tkimage = ImageTk.PhotoImage(self.current_image.resize((self.scaled_width, self.scaled_height), resampling_filter))
 
         # Center the image within the canvas

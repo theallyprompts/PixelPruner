@@ -239,6 +239,10 @@ class PixelPruner:
         self.canvas.bind("<ButtonRelease-1>", self.on_button_release)
         self.canvas.bind("<MouseWheel>", self.on_mouse_wheel)
 
+        # Track window state to resize images when the window is maximized or restored
+        self.last_state = self.master.state()
+        self.master.bind("<Configure>", self.on_window_resize)
+
         self.master.minsize(1300, 750)  # Set a minimum size for the window
 
         # Bind keyboard shortcuts
@@ -287,6 +291,15 @@ class PixelPruner:
             messagebox.showinfo(title, message)
             self.showing_popup = False
 
+    def on_window_resize(self, event):
+        """Redraw the image when the window is resized or state changes."""
+        if event.widget is self.master and self.current_image:
+            # Only redraw when the zoom state or canvas size changes
+            state = self.master.state()
+            if state != self.last_state or event.width != self.canvas.winfo_width() or event.height != self.canvas.winfo_height():
+                self.last_state = state
+                self.display_image()
+
     def load_image(self):
         if not self.folder_path and not self.images:
             self.show_info_message("Information", "Please select an input folder.")
@@ -303,9 +316,19 @@ class PixelPruner:
 
     def display_image(self):
         aspect_ratio = self.current_image.width / self.current_image.height
-        self.scaled_width = min(800, self.current_image.width)
-        self.scaled_height = int(self.scaled_width / aspect_ratio) if aspect_ratio > 1 else min(600, self.current_image.height)
-        self.scaled_width = int(self.scaled_height * aspect_ratio) if self.scaled_height < self.scaled_width else self.scaled_width
+
+        # Determine available canvas space. When the window is maximized
+        # ("zoomed" state on Windows), use the full canvas size. Otherwise
+        # limit the image to the default 800x600 viewing area.
+        is_zoomed = self.master.state() == "zoomed"
+        max_w = self.canvas.winfo_width() if is_zoomed else 800
+        max_h = self.canvas.winfo_height() if is_zoomed else 600
+
+        self.scaled_width = min(self.current_image.width, max_w)
+        self.scaled_height = int(self.scaled_width / aspect_ratio)
+        if self.scaled_height > max_h:
+            self.scaled_height = min(self.current_image.height, max_h)
+            self.scaled_width = int(self.scaled_height * aspect_ratio)
         
         resampling_filter = Resampling.LANCZOS
         

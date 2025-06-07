@@ -3,7 +3,6 @@ import os
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 from tkinterdnd2 import TkinterDnD, DND_FILES
-from PIL import Image, ImageTk, __version__ as PILLOW_VERSION
 import subprocess
 import zipfile
 from datetime import datetime

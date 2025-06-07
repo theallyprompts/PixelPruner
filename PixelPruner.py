@@ -172,6 +172,64 @@ class PixelPruner:
         self.delete_button.pack(side=tk.LEFT, padx=(10, 2))
         ToolTip(self.delete_button, "Delete the current image (Delete)")
 
+        # Load folder icon for generic folder-related actions
+        try:
+            self.folder_icon = tk.PhotoImage(file=resource_path("folder.png"))
+        except Exception as e:
+            print(f"Error loading folder.png: {e}")
+            self.folder_icon = tk.PhotoImage()
+
+        # Load set input folder icon
+        try:
+            self.input_folder_icon = tk.PhotoImage(file=resource_path("input_folder.png"))
+        except Exception as e:
+            print(f"Error loading folder.png: {e}")
+            self.input_folder_icon = tk.PhotoImage()
+
+        # Load set output folder icon
+        try:
+            self.output_folder_icon = tk.PhotoImage(file=resource_path("output_folder.png"))
+        except Exception as e:
+            print(f"Error loading folder.png: {e}")
+            self.output_folder_icon = tk.PhotoImage()
+
+        # Load open output folder icon
+        try:
+            self.open_output_folder_icon = tk.PhotoImage(file=resource_path("open_folder.png"))
+        except Exception as e:
+            print(f"Error loading folder.png: {e}")
+            self.open_output_folder_icon = tk.PhotoImage()
+
+        # Set Input Folder button
+        self.input_folder_button = tk.Button(control_frame, image=self.input_folder_icon, command=self.select_input_folder)
+        self.input_folder_button.pack(side=tk.LEFT, padx=(10, 2))
+        ToolTip(self.input_folder_button, "Set the input folder")
+
+        # Set Output Folder button
+        self.output_folder_button = tk.Button(control_frame, image=self.output_folder_icon, command=self.select_output_folder)
+        self.output_folder_button.pack(side=tk.LEFT, padx=(10, 2))
+        ToolTip(self.output_folder_button, "Set the output folder")
+
+        # Open Output Folder button
+        self.open_output_button = tk.Button(control_frame, image=self.open_output_folder_icon, command=self.open_output_folder)
+        self.open_output_button.pack(side=tk.LEFT, padx=(10, 2))
+        ToolTip(self.open_output_button, "Open the current output folder")
+
+        # Undo Last Crop button (text based)
+        self.undo_button = tk.Button(control_frame, text="Undo", command=self.undo_last_crop)
+        self.undo_button.pack(side=tk.LEFT, padx=(10, 2))
+        ToolTip(self.undo_button, "Undo the last crop (Ctrl+Z)")
+
+        # Zip Crops button (text based)
+        self.zip_button = tk.Button(control_frame, text="Zip", command=self.zip_crops)
+        self.zip_button.pack(side=tk.LEFT, padx=(10, 2))
+        ToolTip(self.zip_button, "Zip current folder crops into an archive")
+
+        # Launch PrunerIQ button (text based)
+        self.pruneriq_button = tk.Button(control_frame, text="PrunerIQ", command=self.launch_pruneriq)
+        self.pruneriq_button.pack(side=tk.LEFT, padx=(10, 2))
+        ToolTip(self.pruneriq_button, "Launch PrunerIQ analysis")
+
         self.image_counter_label = tk.Label(control_frame, text="Viewing 0 of 0")
         self.image_counter_label.pack(side=tk.RIGHT, padx=(10, 20))
 

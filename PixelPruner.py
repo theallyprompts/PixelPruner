@@ -915,7 +915,14 @@ class PixelPruner:
         y = (screen_height // 2) - (window_height // 2)
         window.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
-        columns = ("filename", "contrast", "clarity", "noise", "aesthetic", "rating")
+        columns = (
+            "filename",
+            "contrast",
+            "clarity",
+            "noise",
+            "aesthetic",
+            "rating",
+        )
         tree = ttk.Treeview(window, columns=columns, show="headings")
         tree.pack(fill=tk.BOTH, expand=True)
 
@@ -932,23 +939,44 @@ class PixelPruner:
                 tree.move(k, "", index)
             tree.heading(col, command=lambda: sort_tree(col, not reverse))
 
+        col_widths = {
+            "filename": 200,
+            "contrast": 110,
+            "clarity": 110,
+            "noise": 110,
+            "aesthetic": 80,
+            "rating": 80,
+        }
+
+        heading_names = {
+            "contrast": "Contrast (%)",
+            "clarity": "Clarity (%)",
+            "noise": "Noise (%)",
+        }
+
         for col in columns:
-            tree.heading(col, text=col.title(), command=lambda c=col: sort_tree(c, False))
+            text = heading_names.get(col, col.title())
+            tree.heading(col, text=text, command=lambda c=col: sort_tree(c, False))
             anchor = "w" if col == "filename" else "center"
-            tree.column(col, anchor=anchor)
+            width = col_widths.get(col, 100)
+            tree.column(col, anchor=anchor, width=width, stretch=False)
 
         def populate_tree(items):
             tree.delete(*tree.get_children())
             explanations.clear()
             for result in items:
-                item = tree.insert("", "end", values=(
-                    result["filename"],
-                    f"{result['contrast']:.2f}",
-                    f"{result['clarity']:.2f}",
-                    f"{result['noise']:.2f}",
-                    f"{result['aesthetic']:.2f}",
-                    result["rating"]
-                ))
+                item = tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        result["filename"],
+                        f"{result['contrast']:.2f} ({result['contrast_pct']:.0f}%)",
+                        f"{result['clarity']:.2f} ({result['clarity_pct']:.0f}%)",
+                        f"{result['noise']:.2f} ({result['noise_pct']:.0f}%)",
+                        f"{result['aesthetic']:.2f}",
+                        result["rating"],
+                    ),
+                )
                 explanations[item] = result.get("reason", "")
 
         populate_tree(all_results)
@@ -1046,13 +1074,16 @@ class PixelPruner:
         avg_contrast = sum(r["contrast"] for r in results) / len(results)
         avg_clarity = sum(r["clarity"] for r in results) / len(results)
         avg_noise = sum(r["noise"] for r in results) / len(results)
+        avg_contrast_pct = sum(r["contrast_pct"] for r in results) / len(results)
+        avg_clarity_pct = sum(r["clarity_pct"] for r in results) / len(results)
+        avg_noise_pct = sum(r["noise_pct"] for r in results) / len(results)
         avg_aesthetic = sum(r["aesthetic"] for r in results) / len(results)
 
         summary = (
             f"Images: {len(results)}\n"
-            f"Avg Contrast: {avg_contrast:.2f}   "
-            f"Avg Clarity: {avg_clarity:.2f}   "
-            f"Avg Noise: {avg_noise:.2f}   "
+            f"Avg Contrast: {avg_contrast:.2f} ({avg_contrast_pct:.0f}%)   "
+            f"Avg Clarity: {avg_clarity:.2f} ({avg_clarity_pct:.0f}%)   "
+            f"Avg Noise: {avg_noise:.2f} ({avg_noise_pct:.0f}%)   "
             f"Avg Aesthetic: {avg_aesthetic:.2f}"
     )
 

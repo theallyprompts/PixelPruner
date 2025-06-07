@@ -1,8 +1,57 @@
+"""Utility functions for analysing cropped images.
+
+Metrics explained
+-----------------
+``contrast``
+    Standard deviation of all pixel intensities. Higher values indicate
+    greater difference between dark and light areas.
+``clarity``
+    Variance of the Laplacian of the greyscale image. This acts as a
+    measure of sharpness where larger numbers mean more defined edges.
+``noise``
+    Estimate of noise based on the variance between the original
+    greyscale image and a blurred version. Lower values are better.
+``aesthetic``
+    Placeholder score for a future aesthetic model.
+
+Each image is also given a simple rating (``Poor`` through ``Excellent``)
+derived from threshold values of the above metrics. The ``reason`` field
+in the returned dictionary briefly explains why a particular rating was
+chosen.
+"""
+
 import os
 import json
 from PIL import Image
 import cv2
 import numpy as np
+
+CONTRAST_THRESHOLD = 50
+CLARITY_THRESHOLD = 100
+NOISE_THRESHOLD = 50
+
+def _rate_image(contrast: float, clarity: float, noise: float):
+    """Return a textual rating and explanation for the given metrics."""
+    score = 0
+    reasons = []
+    if contrast >= CONTRAST_THRESHOLD:
+        score += 1
+    else:
+        reasons.append("low contrast")
+    if clarity >= CLARITY_THRESHOLD:
+        score += 1
+    else:
+        reasons.append("low clarity")
+    if noise <= NOISE_THRESHOLD:
+        score += 1
+    else:
+        reasons.append("high noise")
+
+    rating_map = {3: "Excellent", 2: "Good", 1: "Fair", 0: "Poor"}
+    rating = rating_map[score]
+    if not reasons:
+        reasons.append("meets all thresholds")
+    return rating, ", ".join(reasons)
 
 def analyze_image(image_path):
     image = cv2.imread(image_path)
@@ -20,12 +69,16 @@ def analyze_image(image_path):
     # Placeholder: Aesthetic score stub
     aesthetic = 0.0  # Will replace with actual model output later
 
+    rating, reason = _rate_image(contrast, clarity, noise)
+
     return {
         "filename": os.path.basename(image_path),
         "contrast": contrast,
         "clarity": clarity,
         "noise": noise,
-        "aesthetic": aesthetic
+        "aesthetic": aesthetic,
+        "rating": rating,
+        "reason": reason
     }
 
 def analyze_folder(folder_path):

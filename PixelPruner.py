@@ -699,6 +699,18 @@ class PixelPruner:
         file_list = self.master.tk.splitlist(event.data)
         self.load_images_from_list(file_list)
 
+    def view_image(self, image_path):
+        """Display an image on the canvas without altering the loaded list."""
+        if not image_path or not os.path.exists(image_path):
+            return
+        try:
+            self.current_image = Image.open(image_path)
+            self.image_scale = 1
+            self.display_image()
+            self.update_status(f"Viewing {os.path.basename(image_path)}")
+        except Exception as exc:
+            messagebox.showerror("Error", f"Failed to load {image_path}: {exc}")
+
     def toggle_auto_advance(self):
         self.auto_advance_var.set(not self.auto_advance_var.get())
 
@@ -892,7 +904,7 @@ class PixelPruner:
 
         window = tk.Toplevel(self.master)
         window.title("PrunerIQ - Dataset Analysis")
-        window.geometry("800x400")
+        window.geometry("900x500")
 
         window.update_idletasks()
         window_width = window.winfo_width()
@@ -903,23 +915,132 @@ class PixelPruner:
         y = (screen_height // 2) - (window_height // 2)
         window.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
-        columns = ("filename", "contrast", "clarity", "noise", "aesthetic")
+        columns = ("filename", "contrast", "clarity", "noise", "aesthetic", "rating")
         tree = ttk.Treeview(window, columns=columns, show="headings")
         tree.pack(fill=tk.BOTH, expand=True)
 
+        all_results = results
+        explanations = {}
+
+        def sort_tree(col, reverse):
+            data = [(tree.set(k, col), k) for k in tree.get_children("")]
+            if col in ("filename", "rating"):
+                data.sort(reverse=reverse)
+            else:
+                data.sort(key=lambda t: float(t[0]), reverse=reverse)
+            for index, (val, k) in enumerate(data):
+                tree.move(k, "", index)
+            tree.heading(col, command=lambda: sort_tree(col, not reverse))
+
         for col in columns:
-            tree.heading(col, text=col.title())
+            tree.heading(col, text=col.title(), command=lambda c=col: sort_tree(c, False))
             anchor = "w" if col == "filename" else "center"
             tree.column(col, anchor=anchor)
 
-        for result in results:
-            tree.insert("", "end", values=(
-                result["filename"],
-                f"{result['contrast']:.2f}",
-                f"{result['clarity']:.2f}",
-                f"{result['noise']:.2f}",
-                f"{result['aesthetic']:.2f}"
-        ))
+        def populate_tree(items):
+            tree.delete(*tree.get_children())
+            explanations.clear()
+            for result in items:
+                item = tree.insert("", "end", values=(
+                    result["filename"],
+                    f"{result['contrast']:.2f}",
+                    f"{result['clarity']:.2f}",
+                    f"{result['noise']:.2f}",
+                    f"{result['aesthetic']:.2f}",
+                    result["rating"]
+                ))
+                explanations[item] = result.get("reason", "")
+
+        populate_tree(all_results)
+
+        filter_frame = tk.Frame(window)
+        filter_frame.pack(fill=tk.X, padx=5, pady=5)
+
+        entries = {}
+        metrics = ["contrast", "clarity", "noise"]
+        for i, metric in enumerate(metrics):
+            tk.Label(filter_frame, text=f"{metric.title()} Min").grid(row=0, column=i*2, sticky="e")
+            e_min = tk.Entry(filter_frame, width=6)
+            e_min.grid(row=0, column=i*2+1, sticky="w")
+            tk.Label(filter_frame, text=f"Max").grid(row=1, column=i*2, sticky="e")
+            e_max = tk.Entry(filter_frame, width=6)
+            e_max.grid(row=1, column=i*2+1, sticky="w")
+            entries[metric] = (e_min, e_max)
+
+        tk.Label(filter_frame, text="Rating").grid(row=0, column=6, sticky="e")
+        rating_var = tk.StringVar(value="All")
+        rating_box = ttk.Combobox(filter_frame, textvariable=rating_var, state="readonly",
+                                 values=["All", "Poor", "Fair", "Good", "Excellent"])
+        rating_box.grid(row=0, column=7, sticky="w")
+
+        info_label = tk.Label(window, text="", anchor="w")
+        info_label.pack(fill=tk.X, padx=5)
+
+        def apply_filter():
+            filtered = []
+            for r in all_results:
+                passes = True
+                for metric in metrics:
+                    min_val = entries[metric][0].get()
+                    max_val = entries[metric][1].get()
+                    value = r[metric]
+                    if min_val:
+                        try:
+                            if value < float(min_val):
+                                passes = False
+                                break
+                        except ValueError:
+                            pass
+                    if max_val:
+                        try:
+                            if value > float(max_val):
+                                passes = False
+                                break
+                        except ValueError:
+                            pass
+                if rating_var.get() != "All" and r["rating"] != rating_var.get():
+                    passes = False
+                if passes:
+                    filtered.append(r)
+            populate_tree(filtered)
+
+        def reset_filter():
+            for metric in metrics:
+                entries[metric][0].delete(0, tk.END)
+                entries[metric][1].delete(0, tk.END)
+            rating_var.set("All")
+            populate_tree(all_results)
+
+        tk.Button(filter_frame, text="Apply Filter", command=apply_filter).grid(row=0, column=8, padx=5)
+        tk.Button(filter_frame, text="Reset", command=reset_filter).grid(row=1, column=8, padx=5)
+
+        def on_select(event):
+            selected = tree.selection()
+            if selected:
+                info_label.config(text=explanations.get(selected[0], ""))
+
+        tree.bind("<<TreeviewSelect>>", on_select)
+
+        def delete_selected():
+            for item in tree.selection():
+                filename = tree.set(item, "filename")
+                path = os.path.join(self.output_folder, filename)
+                if os.path.exists(path):
+                    os.remove(path)
+                tree.delete(item)
+
+        def on_double_click(event):
+            item = tree.focus()
+            if item:
+                filename = tree.set(item, "filename")
+                path = os.path.join(self.output_folder, filename)
+                self.view_image(path)
+
+        tree.bind("<Double-1>", on_double_click)
+
+        button_frame = tk.Frame(window)
+        button_frame.pack(fill=tk.X, pady=5)
+        tk.Button(button_frame, text="Delete Selected", command=delete_selected).pack(side=tk.RIGHT, padx=5)
 
         # Add summary statistics at the bottom
         avg_contrast = sum(r["contrast"] for r in results) / len(results)

@@ -35,6 +35,17 @@ PixelPruner is a user-friendly image cropping app for AI-generated art. It suppo
 
 - **Keyboard Shortcuts**: Navigate and manipulate images effortlessly with convenient WASD keyboard shortcuts.
 
+### PrunerIQ Metrics
+
+The built-in *PrunerIQ* analysis examines your cropped images and scores them using:
+
+- **Contrast** – standard deviation of pixel intensities. Higher is better.
+- **Clarity** – variance of the Laplacian; larger values indicate sharper images.
+- **Noise** – difference between the image and a blurred copy. Lower numbers mean less noise.
+- **Aesthetic** – placeholder score for future updates.
+
+Each crop receives a rating from **Poor** to **Excellent** based on the above metrics. When viewing the analysis window you can sort, filter ranges, and delete any undesirable crops.
+
   ---
 
 ## Installation Guide - Prebuilt App

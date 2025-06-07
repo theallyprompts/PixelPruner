@@ -108,12 +108,28 @@ def analyze_image(image_path):
         "reason": reason
     }
 
-def analyze_folder(folder_path):
+def analyze_folder(folder_path, crops_only=True):
+    """Analyze images in ``folder_path``.
+
+    Parameters
+    ----------
+    folder_path : str
+        Directory containing images to analyze.
+    crops_only : bool, optional
+        If ``True`` only files whose names start with ``"cropped_"`` will be
+        processed.  When ``False`` all supported image files are analyzed.
+
+    Returns
+    -------
+    list[dict]
+        A list of metric dictionaries for each image.
+    """
+
     results = []
     for file in os.listdir(folder_path):
-        if not file.lower().startswith('cropped_'):
+        if crops_only and not file.lower().startswith("cropped_"):
             continue
-        if file.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+        if file.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
             image_path = os.path.join(folder_path, file)
             result = analyze_image(image_path)
             results.append(result)

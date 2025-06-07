@@ -9,6 +9,7 @@ import zipfile
 from datetime import datetime
 import webbrowser
 import winsound
+import threading
 from packaging.version import parse
 
 # For Pillow >= 10
@@ -894,8 +895,24 @@ class PixelPruner:
             return
 
         folder = self.output_folder
-        results = analyze_folder(folder)
-        self.show_analysis_results(results, folder)
+
+        loading = tk.Toplevel(self.master)
+        loading.title("Please Wait")
+        tk.Label(loading, text="Analyzing crops...").pack(padx=20, pady=20)
+        loading.update()
+
+        results = []
+
+        def run_analysis():
+            nonlocal results
+            results = analyze_folder(folder)
+            self.master.after(0, finish)
+
+        def finish():
+            loading.destroy()
+            self.show_analysis_results(results, folder)
+
+        threading.Thread(target=run_analysis, daemon=True).start()
 
 
     def show_analysis_results(self, results, folder_path):
@@ -960,8 +977,18 @@ class PixelPruner:
             "noise",
             "rating",
         )
-        tree = ttk.Treeview(window, columns=columns, show="headings")
-        tree.pack(fill=tk.BOTH, expand=True)
+        tree_frame = tk.Frame(window)
+        tree_frame.pack(fill=tk.BOTH, expand=True)
+        tree_scrollbar = tk.Scrollbar(tree_frame, orient="vertical")
+        tree = ttk.Treeview(
+            tree_frame,
+            columns=columns,
+            show="headings",
+            yscrollcommand=tree_scrollbar.set,
+        )
+        tree_scrollbar.config(command=tree.yview)
+        tree_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         all_results = results
         explanations = {}

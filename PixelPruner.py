@@ -350,19 +350,39 @@ class PixelPruner:
         if self.current_image:
             real_x1, real_y1 = (x1 - self.image_offset_x) * self.image_scale, (y1 - self.image_offset_y) * self.image_scale
             real_x2, real_y2 = (x2 - self.image_offset_x) * self.image_scale, (y2 - self.image_offset_y) * self.image_scale
+
             if real_x1 > real_x2:
                 real_x1, real_x2 = real_x2, real_x1
             if real_y1 > real_y2:
                 real_y1, real_y2 = real_y2, real_y1
+
             cropped = self.current_image.crop((real_x1, real_y1, real_x2, real_y2))
-            cropped = cropped.resize((512, 512))  # Larger fixed size preview
+
+            # Parse desired output size
+            target_width, target_height = self.original_size
+
+            # Set max size for preview pane display
+            preview_max = 512
+            aspect_ratio = target_width / target_height
+
+            if aspect_ratio >= 1:
+                preview_w = preview_max
+                preview_h = int(preview_w / aspect_ratio)
+            else:
+                preview_h = preview_max
+                preview_w = int(preview_h * aspect_ratio)
+
+            cropped = cropped.resize((preview_w, preview_h), Resampling.LANCZOS)
             self.tkpreview = ImageTk.PhotoImage(cropped)
+
             self.preview_canvas.delete("all")
-            preview_canvas_width = self.preview_canvas.winfo_width()
-            preview_canvas_height = self.preview_canvas.winfo_height()
-            preview_offset_x = (preview_canvas_width - 512) // 2
-            preview_offset_y = (preview_canvas_height - 512) // 2
-            self.preview_canvas.create_image(preview_offset_x, preview_offset_y, anchor="nw", image=self.tkpreview)
+            canvas_w = self.preview_canvas.winfo_width()
+            canvas_h = self.preview_canvas.winfo_height()
+            offset_x = (canvas_w - preview_w) // 2
+            offset_y = (canvas_h - preview_h) // 2
+
+            self.preview_canvas.create_image(offset_x, offset_y, anchor="nw", image=self.tkpreview)
+
 
     def on_button_press(self, event):
         self.start_x = event.x

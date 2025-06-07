@@ -111,6 +111,8 @@ def analyze_image(image_path):
 def analyze_folder(folder_path):
     results = []
     for file in os.listdir(folder_path):
+        if not file.lower().startswith('cropped_'):
+            continue
         if file.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
             image_path = os.path.join(folder_path, file)
             result = analyze_image(image_path)

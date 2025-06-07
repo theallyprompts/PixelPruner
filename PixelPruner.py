@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 from tkinterdnd2 import TkinterDnD, DND_FILES
@@ -25,8 +26,14 @@ def resource_path(relative_path):
         base_path = sys._MEIPASS
     except Exception:
         base_path = os.path.abspath(os.path.dirname(__file__))
-    
+
     return os.path.join(base_path, relative_path)
+
+def app_path():
+    """Return the directory containing the running script or executable."""
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.abspath(os.path.dirname(__file__))
 
 class ToolTip:
     def __init__(self, widget, text):
@@ -94,8 +101,8 @@ class PixelPruner:
         self.menu_bar.add_cascade(label="Settings", menu=self.settings_menu)
         self.auto_advance_var = tk.BooleanVar(value=False)
         self.crop_sound_var = tk.BooleanVar(value=False)
-        self.settings_menu.add_checkbutton(label="Auto-advance", variable=self.auto_advance_var)
-        self.settings_menu.add_checkbutton(label="Crop Sound", variable=self.crop_sound_var)
+        self.settings_menu.add_checkbutton(label="Auto-advance", variable=self.auto_advance_var, command=self.save_settings)
+        self.settings_menu.add_checkbutton(label="Crop Sound", variable=self.crop_sound_var, command=self.save_settings)
 
         # Create the Help menu
         self.help_menu = tk.Menu(self.menu_bar, tearoff=0)
@@ -232,9 +239,13 @@ class PixelPruner:
         self.master.bind("d", lambda event: self.rotate_image(-90))
         self.master.bind("<Control-z>", lambda event: self.undo_last_crop())
         self.master.bind("<Delete>", lambda event: self.delete_current_image())
-        
+
         # Set the focus to the master window
         master.focus_set()
+
+        # Load user settings and apply them
+        self.load_settings()
+        self.master.protocol("WM_DELETE_WINDOW", self.on_close)
         
         # Center the window on the screen
         self.center_window()
@@ -705,6 +716,39 @@ class PixelPruner:
         link = tk.Label(link_frame, text="https://github.com/theallyprompts/PixelPruner", fg="blue", cursor="hand2", padx=10)
         link.pack(side=tk.LEFT)
         link.bind("<Button-1>", lambda e: webbrowser.open_new("https://github.com/theallyprompts/PixelPruner"))
+
+    def load_settings(self):
+        """Load settings from usersettings.json, creating it with defaults if needed."""
+        self.settings_path = os.path.join(app_path(), "usersettings.json")
+        defaults = {"auto_advance": False, "crop_sound": False}
+        if not os.path.exists(self.settings_path):
+            self.settings = defaults
+            self.save_settings()
+            return
+        try:
+            with open(self.settings_path, "r") as f:
+                self.settings = json.load(f)
+        except Exception:
+            self.settings = defaults
+        self.auto_advance_var.set(self.settings.get("auto_advance", False))
+        self.crop_sound_var.set(self.settings.get("crop_sound", False))
+
+    def save_settings(self):
+        """Save current settings to usersettings.json."""
+        settings = {
+            "auto_advance": self.auto_advance_var.get(),
+            "crop_sound": self.crop_sound_var.get(),
+        }
+        try:
+            with open(os.path.join(app_path(), "usersettings.json"), "w") as f:
+                json.dump(settings, f, indent=4)
+        except Exception as e:
+            print(f"Failed to save settings: {e}")
+
+    def on_close(self):
+        """Handle application close."""
+        self.save_settings()
+        self.master.destroy()
 
 def main():
     root = TkinterDnD.Tk()

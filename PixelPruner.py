@@ -464,6 +464,10 @@ class PixelPruner:
         tkthumbnail = ImageTk.PhotoImage(cropped)
         self.cropped_thumbnails.insert(0, (tkthumbnail, filepath))  # Insert at the beginning of the list
 
+        self.refresh_crops_canvas()
+
+    def refresh_crops_canvas(self):
+        """Rebuild the thumbnail grid in the crops canvas."""
         self.crops_canvas.delete("all")  # Clear previous thumbnails
         cols = 2  # Number of columns in the grid
         spacing = 10  # Space between thumbnails
@@ -472,7 +476,7 @@ class PixelPruner:
             row, col = divmod(index, cols)
             x, y = col * (256 + spacing), row * (256 + spacing)
             self.crops_canvas.create_image(x, y, anchor="nw", image=thumbnail)
-            
+
             # Add delete icon at the bottom left corner of each thumbnail
             delete_icon_x = x + 5
             delete_icon_y = y + 256 - 25
@@ -489,28 +493,13 @@ class PixelPruner:
             self.cropped_images = [img for img in self.cropped_images if img != filepath]
             self.cropped_thumbnails = [(thumb, path) for thumb, path in self.cropped_thumbnails if path != filepath]
             filepath_forward_slash = filepath.replace("\\", "/")
-            self.update_crops_canvas_layout()
+            self.refresh_crops_canvas()
             self.update_cropped_images_counter()
             self.update_status(f"Deleted crop {filepath_forward_slash}")
 
     def update_crops_canvas_layout(self):
-        self.crops_canvas.delete("all")  # Clear previous thumbnails
-        cols = 2  # Number of columns in the grid
-        spacing = 10  # Space between thumbnails
-
-        for index, (thumbnail, path) in enumerate(self.cropped_thumbnails):
-            row, col = divmod(index, cols)
-            x, y = col * (256 + spacing), row * (256 + spacing)
-            self.crops_canvas.create_image(x, y, anchor="nw", image=thumbnail)
-            
-            # Add delete icon at the bottom left corner of each thumbnail
-            delete_icon_x = x + 5
-            delete_icon_y = y + 256 - 25
-            delete_icon = self.crops_canvas.create_image(delete_icon_x, delete_icon_y, anchor="nw", image=self.delete_crop_image)
-            self.crops_canvas.tag_bind(delete_icon, "<Button-1>", lambda event, path=path: self.delete_crop(path))
-
-        # Update scroll region to accommodate all thumbnails
-        self.crops_canvas.config(scrollregion=self.crops_canvas.bbox("all"))
+        """Legacy wrapper kept for backward compatibility."""
+        self.refresh_crops_canvas()
 
     def perform_crop(self):
         if not self.folder_path and not self.images:
@@ -630,7 +619,7 @@ class PixelPruner:
             os.remove(last_cropped_image)
 
         self.cropped_thumbnails.pop(0)
-        self.update_crops_canvas_layout()
+        self.refresh_crops_canvas()
         self.update_cropped_images_counter()
         self.update_status("Last crop undone")
 

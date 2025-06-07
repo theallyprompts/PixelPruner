@@ -104,6 +104,11 @@ class PixelPruner:
         self.settings_menu.add_checkbutton(label="Auto-advance", variable=self.auto_advance_var, command=self.save_settings)
         self.settings_menu.add_checkbutton(label="Crop Sound", variable=self.crop_sound_var, command=self.save_settings)
 
+        # Create the Tools menu
+        self.tools_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="Tools", menu=self.tools_menu)
+        self.tools_menu.add_command(label="PrunerIQ Analysis", command=self.launch_pruneriq)
+
         # Create the Help menu
         self.help_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
@@ -744,6 +749,70 @@ class PixelPruner:
                 json.dump(settings, f, indent=4)
         except Exception as e:
             print(f"Failed to save settings: {e}")
+
+    def launch_pruneriq(self):
+        from pruneriq import analyze_folder
+        if not self.output_folder:
+            self.show_info_message("Information", "Please set or create an Output Folder first!")
+            return
+
+        results = analyze_folder(self.output_folder)
+        self.show_analysis_results(results)
+
+
+    def show_analysis_results(self, results):
+        if not results:
+            self.show_info_message("Analysis", "No images were found in the output folder.")
+            return
+
+        window = tk.Toplevel(self.master)
+        window.title("PrunerIQ - Dataset Analysis")
+        window.geometry("800x400")
+
+        window.update_idletasks()
+        window_width = window.winfo_width()
+        window_height = window.winfo_height()
+        screen_width = window.winfo_screenwidth()
+        screen_height = window.winfo_screenheight()
+        x = (screen_width // 2) - (window_width // 2)
+        y = (screen_height // 2) - (window_height // 2)
+        window.geometry(f"{window_width}x{window_height}+{x}+{y}")
+
+        columns = ("filename", "contrast", "clarity", "noise", "aesthetic")
+        tree = ttk.Treeview(window, columns=columns, show="headings")
+        tree.pack(fill=tk.BOTH, expand=True)
+
+        for col in columns:
+            tree.heading(col, text=col.title())
+            anchor = "w" if col == "filename" else "center"
+            tree.column(col, anchor=anchor)
+
+        for result in results:
+            tree.insert("", "end", values=(
+                result["filename"],
+                f"{result['contrast']:.2f}",
+                f"{result['clarity']:.2f}",
+                f"{result['noise']:.2f}",
+                f"{result['aesthetic']:.2f}"
+        ))
+
+        # Add summary statistics at the bottom
+        avg_contrast = sum(r["contrast"] for r in results) / len(results)
+        avg_clarity = sum(r["clarity"] for r in results) / len(results)
+        avg_noise = sum(r["noise"] for r in results) / len(results)
+        avg_aesthetic = sum(r["aesthetic"] for r in results) / len(results)
+
+        summary = (
+            f"Images: {len(results)}\n"
+            f"Avg Contrast: {avg_contrast:.2f}   "
+            f"Avg Clarity: {avg_clarity:.2f}   "
+            f"Avg Noise: {avg_noise:.2f}   "
+            f"Avg Aesthetic: {avg_aesthetic:.2f}"
+    )
+
+        summary_label = tk.Label(window, text=summary, font=("Helvetica", 10), anchor="w", justify="left")
+        summary_label.pack(padx=10, pady=10, anchor="w")
+
 
     def on_close(self):
         """Handle application close."""

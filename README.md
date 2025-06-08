@@ -166,4 +166,4 @@ Follow these steps to install and run PixelPruner on your local machine.
 
 ### Created By...
 
-**[TheAlly](https://civitai.com/user/theally)** - Vibe coding ftw!
+**[TheAlly](https://civitai.com/user/theally)** - Vibe coding ftw! If you've enjoyed PixelPruner, consider [shooting me a tip](https://ko-fi.com/theallyprompts)! Thanks!

@@ -285,7 +285,7 @@ class PixelPruner:
 
         self.status_bar = tk.Frame(master, bd=1, relief=tk.SUNKEN)
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-        self.status_label = tk.Label(self.status_bar, text="Welcome to PixelPruner - Version 2.1.0", anchor=tk.W)
+        self.status_label = tk.Label(self.status_bar, text="Welcome to PixelPruner - Version 3.0.0", anchor=tk.W)
         self.status_label.pack(side=tk.LEFT, padx=10)
         self.cropped_images_label = tk.Label(self.status_bar, text="Images Cropped: 0", anchor=tk.E)
         self.cropped_images_label.pack(side=tk.RIGHT, padx=10)
@@ -1011,7 +1011,7 @@ class PixelPruner:
         about_window.geometry(f'{window_width}x{window_height}+{x}+{y}')
 
         about_text = (
-            "Version 2.1.0 - 5/19/2024\n\n"
+            "Version 3.0.0 - 6/8/2025\n\n"
             "Developed by TheAlly and GPT4o\n\n"
             "About: Prepare your LoRA training data with ease! "
             "Check out the GitHub Repo for the full feature list.\n\n"

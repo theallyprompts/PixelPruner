@@ -126,10 +126,26 @@ class PixelPruner:
         tk.Label(control_frame, text="Select crop size:").pack(side=tk.LEFT, padx=(10, 2))
         
         self.size_var = tk.StringVar()
-        self.size_dropdown = ttk.Combobox(control_frame, textvariable=self.size_var, state="readonly", values=["512x512", "768x768", "1024x1024", "2048x2048", "512x768", "768x512"])
+        self.custom_option = "Custom..."
+        self.size_options = [
+            "512x512",
+            "768x768",
+            "1024x1024",
+            "2048x2048",
+            "512x768",
+            "768x512",
+            self.custom_option,
+        ]
+        self.size_dropdown = ttk.Combobox(
+            control_frame,
+            textvariable=self.size_var,
+            state="readonly",
+            values=self.size_options,
+        )
         self.size_dropdown.pack(side=tk.LEFT, padx=(2, 20))
         self.size_dropdown.set("512x512")  # Default size
-        self.size_dropdown.bind("<<ComboboxSelected>>", self.update_crop_box_size)
+        self.previous_size = "512x512"
+        self.size_dropdown.bind("<<ComboboxSelected>>", self.on_size_selected)
         ToolTip(self.size_dropdown, "Choose the size of the crop area")
 
         self.prev_button = tk.Button(control_frame, text="< Prev", command=self.load_previous_image)
@@ -436,6 +452,69 @@ class PixelPruner:
             self.current_image = self.current_image.rotate(angle, expand=True)
             self.display_image()
             self.update_status(f"Image rotated by {angle} degrees")
+
+    def on_size_selected(self, event=None):
+        selection = self.size_var.get()
+        if selection == self.custom_option:
+            # restore previous size while dialog is open
+            self.size_var.set(self.previous_size)
+            self.open_custom_size_dialog()
+        else:
+            self.previous_size = selection
+            self.update_crop_box_size()
+
+    def open_custom_size_dialog(self):
+        dialog = tk.Toplevel(self.master)
+        dialog.title("Custom Size")
+        dialog.resizable(False, False)
+        dialog.transient(self.master)
+        dialog.grab_set()
+
+        width_var = tk.StringVar(value=str(self.current_size[0]))
+        height_var = tk.StringVar(value=str(self.current_size[1]))
+
+        tk.Label(dialog, text="Width:").grid(row=0, column=0, padx=10, pady=(10, 5))
+        width_entry = tk.Entry(dialog, textvariable=width_var, width=10)
+        width_entry.grid(row=0, column=1, padx=10, pady=(10, 5))
+
+        tk.Label(dialog, text="Height:").grid(row=1, column=0, padx=10, pady=5)
+        height_entry = tk.Entry(dialog, textvariable=height_var, width=10)
+        height_entry.grid(row=1, column=1, padx=10, pady=5)
+
+        def apply():
+            try:
+                w = int(width_var.get())
+                h = int(height_var.get())
+                if w <= 0 or h <= 0:
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("Invalid Input", "Please enter positive integers for width and height.")
+                return
+            value = f"{w}x{h}"
+            values = list(self.size_dropdown["values"])
+            if value not in values:
+                values.insert(-1, value)
+                self.size_dropdown["values"] = values
+            self.size_var.set(value)
+            self.previous_size = value
+            self.update_crop_box_size()
+            dialog.destroy()
+
+        def cancel():
+            self.size_var.set(self.previous_size)
+            dialog.destroy()
+
+        btn_frame = tk.Frame(dialog)
+        btn_frame.grid(row=2, column=0, columnspan=2, pady=(5, 10))
+        tk.Button(btn_frame, text="OK", command=apply).pack(side=tk.LEFT, padx=5)
+        tk.Button(btn_frame, text="Cancel", command=cancel).pack(side=tk.LEFT, padx=5)
+
+        dialog.update_idletasks()
+        w = dialog.winfo_width()
+        h = dialog.winfo_height()
+        sw = dialog.winfo_screenwidth()
+        sh = dialog.winfo_screenheight()
+        dialog.geometry(f"{w}x{h}+{sw//2 - w//2}+{sh//2 - h//2}")
 
     def update_crop_box_size(self, event=None):
         if self.rect:

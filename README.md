@@ -54,6 +54,8 @@ The built-in *PrunerIQ* analysis, accessed from the `Tools` menu, examines your 
 - **Noise** – difference between the image and a blurred copy. Lower numbers mean less noise.
 - **Aesthetic** – placeholder score for future updates!
 
+![image](https://github.com/user-attachments/assets/f9d068f5-d1a9-48bb-9f9c-54cc12a2076b)
+
 Each metric is also normalised into a 0‑100 percentage shown in the analysis table
 (`Contrast (%)`, `Clarity (%)`, and `Noise (%)`).  These give a quick visual cue
 of how close the measurement is to the recommended threshold values.  Each crop

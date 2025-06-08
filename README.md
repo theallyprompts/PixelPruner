@@ -24,9 +24,14 @@ PixelPruner is a user-friendly image cropping app for AI-generated art. It suppo
 
   ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/9dac7fdb-6bb8-4c46-a863-9506701b219a)
 
+- **Source Gallery View**: Cropping a lot of source images? View them in the gallery style Sources pane via `View > Sources Pane`. Click on one in this pane to load it for cropping!
+
+  ![image](https://github.com/user-attachments/assets/96710251-6af6-46d8-9ece-b15540ba65cf)
+
 - **Custom Crop Sizes**: Choose from preset dimensions or enter your own width and height.
 
 - **Customizable Output Folder**: Choose a custom folder to save your cropped images.
+  
 - **Default Directories**: Set default input and output folders from the welcome screen or via `Settings > Set Default Paths`.
 
 - **Zip Crops**: Quickly zip all cropped images into a single archive for easy sharing, storage, or upload to the Civitai.com on-site LoRA Trainer
@@ -36,17 +41,18 @@ PixelPruner is a user-friendly image cropping app for AI-generated art. It suppo
 - **Undo Crop Actions**: Made a mistake? Simply undo the last crop with the click of a button.
 
 - **Keyboard Shortcuts**: Navigate and manipulate images effortlessly with convenient WASD keyboard shortcuts.
+
 - **Flexible Analysis**: The PrunerIQ window includes a `Crops Only` checkbox so
   you can analyze either just the cropped images or all images in a folder.
 
-### PrunerIQ Metrics
+### PrunerIQ Analysis
 
-The built-in *PrunerIQ* analysis examines your cropped images and scores them using:
+The built-in *PrunerIQ* analysis, accessed from the `Tools` menu, examines your cropped images and scores them using:
 
 - **Contrast** – standard deviation of pixel intensities. Higher is better.
 - **Clarity** – variance of the Laplacian; larger values indicate sharper images.
 - **Noise** – difference between the image and a blurred copy. Lower numbers mean less noise.
-- **Aesthetic** – placeholder score for future updates.
+- **Aesthetic** – placeholder score for future updates!
 
 Each metric is also normalised into a 0‑100 percentage shown in the analysis table
 (`Contrast (%)`, `Clarity (%)`, and `Noise (%)`).  These give a quick visual cue
@@ -132,6 +138,8 @@ Follow these steps to install and run PixelPruner on your local machine.
 
 **Crop and Manage Images**: Use the interactive tools to crop, rotate, and manage your images. Cropped images can be previewed and saved to a custom output folder.
 
+**Analyze your Crops**: Check your crops for clarity (blurryness), Noise, and Contrast using new `PrunerIQ` from the `Tools` menu!
+
 **Keyboard Shortcuts**: Use keyboard shortcuts (W, S) to navigate through images and (A, D) to rotate them. Ctrl+Z will undo the last crop.
 
 ---
@@ -146,7 +154,7 @@ Follow these steps to install and run PixelPruner on your local machine.
 
 4. ~~**A Better Menu** - A proper file menu system.~~ Added in v2.0.0
 
-5. **User Settings** - The ability to save user preferences.
+5. ~~**User Settings** - The ability to save user preferences.~~ Added in v3.0.0
 
 6. **Simple image editing** - brightness, contrast, sharpness, etc. I want to be able to do as much as possible as easily as possible, without having to photoshop anything prior to upload to Civitai.
 

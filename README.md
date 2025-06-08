@@ -24,6 +24,8 @@ PixelPruner is a user-friendly image cropping app for AI-generated art. It suppo
 
   ![image](https://github.com/theallyprompts/PixelPruner/assets/133992794/9dac7fdb-6bb8-4c46-a863-9506701b219a)
 
+- **Custom Crop Sizes**: Choose from preset dimensions or enter your own width and height.
+
 - **Customizable Output Folder**: Choose a custom folder to save your cropped images.
 - **Default Directories**: Set default input and output folders from the welcome screen or via `Settings > Set Default Paths`.
 

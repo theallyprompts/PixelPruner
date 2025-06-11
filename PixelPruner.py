@@ -109,7 +109,7 @@ class PixelPruner:
         self.default_output_folder = ""
         self.settings_menu.add_checkbutton(label="Auto-advance", variable=self.auto_advance_var, command=self.save_settings)
         self.settings_menu.add_checkbutton(label="Crop Sound", variable=self.crop_sound_var, command=self.save_settings)
-        self.settings_menu.add_command(label="Set Default Paths", command=self.show_welcome_screen)
+        self.settings_menu.add_command(label="Set Defaults", command=self.show_welcome_screen)
 
         # Create the Tools menu
         self.tools_menu = tk.Menu(self.menu_bar, tearoff=0)
@@ -286,7 +286,7 @@ class PixelPruner:
 
         self.status_bar = tk.Frame(master, bd=1, relief=tk.SUNKEN)
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-        self.status_label = tk.Label(self.status_bar, text="Welcome to PixelPruner - Version 3.0.0", anchor=tk.W)
+        self.status_label = tk.Label(self.status_bar, text="Welcome to PixelPruner - Version 3.1.0", anchor=tk.W)
         self.status_label.pack(side=tk.LEFT, padx=10)
         self.cropped_images_label = tk.Label(self.status_bar, text="Images Cropped: 0", anchor=tk.E)
         self.cropped_images_label.pack(side=tk.RIGHT, padx=10)
@@ -1033,7 +1033,7 @@ class PixelPruner:
         about_window.geometry(f'{window_width}x{window_height}+{x}+{y}')
 
         about_text = (
-            "Version 3.0.0 - 6/8/2025\n\n"
+            "Version 3.1.0 - 6/11/2025\n\n"
             "Developed by TheAlly and GPT4o\n\n"
             "About: Prepare your LoRA training data with ease! "
             "Check out the GitHub Repo for the full feature list.\n\n"
@@ -1056,6 +1056,8 @@ class PixelPruner:
         welcome.title("Welcome to PixelPruner")
         welcome.geometry("520x380")
         welcome.resizable(False, False)
+        welcome.protocol("WM_DELETE_WINDOW", lambda: None)
+        welcome.overrideredirect(True)
         welcome.grab_set()
 
         # Center it
@@ -1100,16 +1102,16 @@ class PixelPruner:
 
         # Footer controls
         footer = tk.Frame(frame)
-        footer.pack(fill="x", pady=(20, 0))
+        footer.pack(fill="x", pady=(20, 0), padx=10)
+
+        left_footer = tk.Frame(footer)
+        left_footer.pack(side="left")
 
         show_var = tk.BooleanVar(value=self.settings.get("show_welcome", True))
-        tk.Checkbutton(footer, text="Show Welcome at startup", variable=show_var).pack(side="left")
+        tk.Checkbutton(left_footer, text="Show Welcome at startup", variable=show_var).pack(side="left")
+        
         safe_var = tk.BooleanVar(value=self.settings.get("safe_mode", False))
-        tk.Checkbutton(
-            footer,
-            text="Safe Mode - Read only mode.",
-            variable=safe_var,
-        ).pack(side="left", padx=(10, 0))
+        tk.Checkbutton(left_footer, text="Safe Mode - Delete actions disabled", variable=safe_var).pack(side="left", padx=(10, 0))
 
         def save_and_close():
             self.settings["show_welcome"] = show_var.get()
@@ -1131,7 +1133,10 @@ class PixelPruner:
             self.update_safe_mode_ui()
             welcome.destroy()
 
-        tk.Button(footer, text="Start Using PixelPruner", command=save_and_close).pack(side="right")
+        button_frame = tk.Frame(frame)
+        button_frame.pack(fill="x", pady=(15, 10))
+
+        tk.Button(button_frame, text="Start Using PixelPruner", command=save_and_close).pack(side="top", anchor="center")
 
     def _browse_folder(self, entry_widget):
         path = filedialog.askdirectory(title="Select Folder")

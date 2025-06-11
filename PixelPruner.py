@@ -104,6 +104,7 @@ class PixelPruner:
         self.auto_advance_var = tk.BooleanVar(value=False)
         self.crop_sound_var = tk.BooleanVar(value=False)
         self.show_welcome_var = tk.BooleanVar(value=True)
+        self.safe_mode_var = tk.BooleanVar(value=False)
         self.default_input_folder = ""
         self.default_output_folder = ""
         self.settings_menu.add_checkbutton(label="Auto-advance", variable=self.auto_advance_var, command=self.save_settings)
@@ -348,6 +349,7 @@ class PixelPruner:
 
         # Load user settings and apply them
         self.load_settings()
+        self.update_safe_mode_ui()
         self.master.protocol("WM_DELETE_WINDOW", self.on_close)
 
         # Center the window on the screen
@@ -380,6 +382,17 @@ class PixelPruner:
             self.showing_popup = True
             messagebox.showinfo(title, message)
             self.showing_popup = False
+
+    def update_safe_mode_ui(self):
+        """Enable or disable delete-related widgets based on safe mode."""
+        state = tk.DISABLED if self.safe_mode_var.get() else tk.NORMAL
+        self.delete_button.config(state=state)
+        self.undo_button.config(state=state)
+        # Update Edit menu entry for Undo Last Crop
+        try:
+            self.edit_menu.entryconfig("Undo Last Crop", state=state)
+        except Exception:
+            pass
 
     def on_window_resize(self, event):
         """Redraw the image when the window is resized or state changes."""
@@ -689,6 +702,9 @@ class PixelPruner:
         self.crops_canvas.config(scrollregion=self.crops_canvas.bbox("all"))
 
     def delete_crop(self, filepath):
+        if self.safe_mode_var.get():
+            self.show_info_message("Safe Mode", "Safe Mode is enabled. Delete operations are disabled.")
+            return
         if messagebox.askyesno("Delete Crop", "Are you sure you want to delete this crop?"):
             if os.path.exists(filepath):
                 os.remove(filepath)
@@ -864,6 +880,9 @@ class PixelPruner:
         self.master.after(200, self.load_previous_image)
 
     def undo_last_crop(self):
+        if self.safe_mode_var.get():
+            self.show_info_message("Safe Mode", "Safe Mode is enabled. Delete operations are disabled.")
+            return
         if not self.cropped_images:
             messagebox.showinfo("Info", "No cropped images to undo!")
             return
@@ -977,6 +996,9 @@ class PixelPruner:
         self.auto_advance_var.set(not self.auto_advance_var.get())
 
     def delete_current_image(self):
+        if self.safe_mode_var.get():
+            self.show_info_message("Safe Mode", "Safe Mode is enabled. Delete operations are disabled.")
+            return
         if not self.folder_path and not self.images:
             self.show_info_message("Information", "Please set an Input Folder from the File Menu!")
             return
@@ -1082,12 +1104,20 @@ class PixelPruner:
 
         show_var = tk.BooleanVar(value=self.settings.get("show_welcome", True))
         tk.Checkbutton(footer, text="Show Welcome at startup", variable=show_var).pack(side="left")
+        safe_var = tk.BooleanVar(value=self.settings.get("safe_mode", False))
+        tk.Checkbutton(
+            footer,
+            text="Safe Mode - Read only mode.",
+            variable=safe_var,
+        ).pack(side="left", padx=(10, 0))
 
         def save_and_close():
             self.settings["show_welcome"] = show_var.get()
             self.show_welcome_var.set(show_var.get())            
             self.settings["default_input_folder"] = input_entry.get()
             self.settings["default_output_folder"] = output_entry.get()
+            self.settings["safe_mode"] = safe_var.get()
+            self.safe_mode_var.set(safe_var.get())
             self.default_input_folder = input_entry.get()
             self.default_output_folder = output_entry.get()
             self.folder_path = self.default_input_folder
@@ -1098,6 +1128,7 @@ class PixelPruner:
             if self.folder_path:
                 self.load_images_from_folder()
             self.update_status("Ready.")
+            self.update_safe_mode_ui()
             welcome.destroy()
 
         tk.Button(footer, text="Start Using PixelPruner", command=save_and_close).pack(side="right")
@@ -1115,6 +1146,7 @@ class PixelPruner:
             "auto_advance": False,
             "crop_sound": False,
             "show_welcome": True,
+            "safe_mode": False,
             "default_input_folder": "",
             "default_output_folder": "",
         }
@@ -1130,6 +1162,7 @@ class PixelPruner:
         self.auto_advance_var.set(self.settings.get("auto_advance", False))
         self.crop_sound_var.set(self.settings.get("crop_sound", False))
         self.show_welcome_var.set(self.settings.get("show_welcome", True))
+        self.safe_mode_var.set(self.settings.get("safe_mode", False))
         self.default_input_folder = self.settings.get("default_input_folder", "")
         self.default_output_folder = self.settings.get("default_output_folder", "")
 
@@ -1143,6 +1176,7 @@ class PixelPruner:
         self.settings["auto_advance"] = self.auto_advance_var.get()
         self.settings["crop_sound"] = self.crop_sound_var.get()
         self.settings["show_welcome"] = self.show_welcome_var.get()
+        self.settings["safe_mode"] = self.safe_mode_var.get()
         self.settings["default_input_folder"] = self.default_input_folder
         self.settings["default_output_folder"] = self.default_output_folder
 
@@ -1421,6 +1455,12 @@ class PixelPruner:
         tree.bind("<<TreeviewSelect>>", on_select)
 
         def delete_selected():
+            if self.safe_mode_var.get():
+                self.show_info_message(
+                    "Safe Mode",
+                    "Safe Mode is enabled. Delete operations are disabled.",
+                )
+                return
             for item in tree.selection():
                 filename = tree.set(item, "filename")
                 path = os.path.join(current_folder, filename)
